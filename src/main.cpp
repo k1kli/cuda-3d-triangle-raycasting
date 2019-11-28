@@ -10,6 +10,7 @@
 #include <iostream>
 #include <vector>
 #include "DisplayCalculator.h"
+#include <helper_cuda.h>
 
 // includes CUDA
 #include <cuda_runtime.h>
@@ -39,14 +40,11 @@ void Display()
     sdkCreateTimer(&timer);
     sdkStartTimer(&timer);
 
-	glClearColor(1.0,1.0,1.0,1.0);
+	glClearColor(1.0,0.0,1.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glRasterPos2d(-1.0, -1.0);
-	int width = glutGet(GLUT_WINDOW_WIDTH);
-	int height = glutGet(GLUT_WINDOW_HEIGHT);
 	checkGLError();
-	cudaGLMapBufferObject((void **)&displayCalculator.d_colorMap,bufferID);
-	cudaGLUnmapBufferObject(bufferID);
+	displayCalculator.GenerateDisplay();
+//	int k = cudaGLUnmapBufferObject(bufferID);
 	glBindBuffer( GL_PIXEL_UNPACK_BUFFER, bufferID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
@@ -55,10 +53,13 @@ void Display()
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1.0f);
 		glVertex3f(0,0,0);
+
 		glTexCoord2f(0,0);
 		glVertex3f(0,1.0f,0);
+
 		glTexCoord2f(1.0f,0);
 		glVertex3f(1.0f,1.0f,0);
+
 		glTexCoord2f(1.0f,1.0f);
 		glVertex3f(1.0f,0,0);
 	glEnd();
@@ -76,16 +77,22 @@ void Display()
 void Reshape(int width, int height)
 {
 	glViewport(0,0,width, height);
-	glOrtho(0,1,0,1,-1,1);
+
+    glMatrixMode( GL_PROJECTION );
+
+    glLoadIdentity();
+	gluOrtho2D(0,1,0,1);
+	cudaGLUnmapBufferObject(bufferID);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, bufferID);
 	glBufferData(GL_PIXEL_UNPACK_BUFFER, width*height*4,NULL,GL_DYNAMIC_COPY);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 	glTexImage2D(GL_TEXTURE_2D,0, GL_RGBA8,width, height, 0, GL_BGRA,GL_UNSIGNED_BYTE,NULL);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	displayCalculator.mapWidth = width;
 	displayCalculator.mapHeight = height;
 	printf("Width = %d, height = %d\n", width, height);
+	cudaGLMapBufferObject((void **)&displayCalculator.d_colorMap,bufferID);
 	glutPostRedisplay();
 
 }
@@ -116,10 +123,12 @@ void bindTexture(int width, int height)
 	glGenTextures(1,&textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 	glTexImage2D(GL_TEXTURE_2D,0, GL_RGBA8,width, height, 0, GL_BGRA,GL_UNSIGNED_BYTE,NULL);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	displayCalculator.mapWidth = width;
 	displayCalculator.mapHeight = height;
+	cudaGLMapBufferObject((void **)&displayCalculator.d_colorMap,bufferID);
+	getLastCudaError("Failed to bind texture");
 
 }
 
@@ -150,6 +159,9 @@ void CreateMesh()
 	displayCalculator.mesh.SetTriangles(triangles,trianglesLen);
 	displayCalculator.mesh.RecalculateNormals();
 	displayCalculator.mesh.CopyToDevice();
+	displayCalculator.SetCameraPosition(make_float4(0.0f, 0.0f, -3.0f, 0.0f));
+	displayCalculator.SetCameraLookAt(make_float3(0.0f, 0.0f, 0.0f),make_float3(0.0f, 1.0f, 0.0f));
+	displayCalculator.SetCameraFieldOfView(2.0f, 2.0f);
 }
 
 void StartGL(int argc, char **argv)
@@ -164,6 +176,7 @@ void StartGL(int argc, char **argv)
 	glutMouseFunc(Mouse);
 	glutPassiveMotionFunc(MouseMotion);
 	bindTexture(600,600);
+	CreateMesh();
 	glutMainLoop();
 }
 

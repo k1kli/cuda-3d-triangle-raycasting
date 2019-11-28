@@ -208,6 +208,13 @@ src/main.o : ../src/main.cpp \
     /usr/include/c++/7/bits/vector.tcc \
     ../src/DisplayCalculator.h \
     ../src/Mesh.h \
+    ../include/cudaInclude/helper_cuda.h \
+    ../include/cudaInclude/helper_string.h \
+    /usr/include/c++/7/fstream \
+    /usr/include/c++/7/bits/codecvt.h \
+    /usr/include/x86_64-linux-gnu/c++/7/bits/basic_file.h \
+    /usr/include/x86_64-linux-gnu/c++/7/bits/c++io.h \
+    /usr/include/c++/7/bits/fstream.tcc \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/cuda_runtime.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/crt/host_config.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/library_types.h \

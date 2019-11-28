@@ -63,6 +63,7 @@ void Mesh::SetPoints(float3 points[], int length)
 		this->points[i] = make_float4(points[i], 0);
 	}
 	pointsLength = length;
+	initialized = false;
 }
 void Mesh::SetTriangles(int triangles[], int length)
 {
@@ -147,4 +148,27 @@ void Mesh::CopyToDevice()
 	getLastCudaError("Couldn't malloc d_normals for Mesh");
 	cudaMemcpy(d_normals, normals, sizeof(float4)*pointsLength, cudaMemcpyHostToDevice);
 	getLastCudaError("Couldn't memcpy normals to device for Mesh");
+	initialized = true;
+}
+
+bool Mesh::IsInitialized() {
+	return initialized;
+}
+
+DeviceMeshData* Mesh::GetDeviceMeshDataPointer() {
+	DeviceMeshData hostRes;
+	hostRes.d_points = d_points;
+	hostRes.d_triangles = d_triangles;
+	hostRes.d_normals = d_normals;
+	hostRes.d_triangleNormals = d_triangleNormals;
+	hostRes.pointsLength = pointsLength;
+	hostRes.trianglesLength = trianglesLength;
+	DeviceMeshData * res;
+	cudaMalloc(&res,sizeof(DeviceMeshData));
+	getLastCudaError("Couldn't malloc DeviceMeshData for Mesh");
+
+	cudaMemcpy(res,&hostRes, sizeof(DeviceMeshData), cudaMemcpyHostToDevice);
+	getLastCudaError("Couldn't memcpy DeviceMeshData to device for Mesh");
+
+	return res;
 }
