@@ -16,6 +16,7 @@
 #define MIN(a,b) (a)>(b) ? (b) : (a)
 #endif
 #define DIVROUNDUP(a, b) ((a)+(b) - 1) / (b)
+#define PI 3.1415f
 
 
 

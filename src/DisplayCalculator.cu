@@ -27,26 +27,60 @@ void DisplayCalculator::GenerateDisplay() {
 	{
 		throw "Initialize mesh first";
 	}
-	DeviceMeshData * d_meshData = mesh.GetDeviceMeshDataPointer();
-	float4 rightDirection = make_float4(cross(make_float3(lookAt), make_float3(cameraUpDirection)),0);
-	float4 cameraTopLeftCorner = cameraPosition + rightDirection * (-fovWidth/2) + cameraUpDirection * (fovHeight/2);
+	DeviceMeshData meshData = mesh.GetDeviceMeshData();
+	float3 rayDirection = normalize(lookAt - cameraPosition);
+	float3 rightDirection = cross(rayDirection, cameraUpDirection);
+	float3 u = cross(rightDirection, rayDirection);
+	float3 cameraBottomLeftCorner = cameraPosition + rightDirection * (-fovWidth/2) + u * (-fovHeight/2);
+	float3 xOffset = rightDirection*(fovWidth/mapWidth);
+	float3 yOffset = u*(fovHeight/mapHeight);
 	dim3 threads(32,32,1);
 	dim3 blocks(DIVROUNDUP(mapWidth, threads.x), DIVROUNDUP(mapHeight, threads.y),1);
-	getLastCudaError("elsewhere");
 	CastRaysOrthogonal<<<blocks, threads>>>(
-			cameraTopLeftCorner,lookAt, cameraUpDirection, fovWidth, fovHeight, mapWidth, mapHeight, d_colorMap, d_meshData);
+			cameraBottomLeftCorner,rayDirection, xOffset,yOffset, mapWidth, mapHeight, d_colorMap, meshData);
 
 	getLastCudaError("CastRaysOrthogonal failed");
-	cudaFree(d_meshData);
+	cudaDeviceSynchronize();
 }
 
-void DisplayCalculator::SetCameraPosition(float4 position) {
+void DisplayCalculator::GenerateDisplayPerspective()
+{
+	if(!mesh.IsInitialized())
+	{
+		throw "Initialize mesh first";
+	}
+	DeviceMeshData meshData = mesh.GetDeviceMeshData();
+	float3 forwardDirection = normalize(lookAt - cameraPosition);
+	float3 rightDirection = cross(forwardDirection, cameraUpDirection);
+	float3 u = cross(rightDirection, forwardDirection);
+
+	float nearDistance = 1.0f;
+	float farDistance = 5.0f;
+
+	float3 xFarOffset = rightDirection*(fovWidth/mapWidth);
+	float3 yFarOffset = u*(fovHeight/mapHeight);
+	dim3 threads(32,32,1);
+	dim3 blocks(DIVROUNDUP(mapWidth, threads.x), DIVROUNDUP(mapHeight, threads.y),1);
+	CastRaysPerspective<<<blocks, threads>>>(
+			cameraPosition,
+			nearDistance, farDistance,
+			xFarOffset, yFarOffset,
+			forwardDirection,
+			mapWidth, mapHeight,
+			d_colorMap, meshData
+			);
+
+	getLastCudaError("CastRaysPerspective failed");
+	cudaDeviceSynchronize();
+}
+
+void DisplayCalculator::SetCameraPosition(float3 position) {
 	this->cameraPosition = position;
 }
 
 void DisplayCalculator::SetCameraLookAt(float3 lookAt, float3 upDirection) {
-	this->lookAt = make_float4(normalize(lookAt),0);
-	this->cameraUpDirection = make_float4(normalize(upDirection),0);
+	this->lookAt = lookAt;
+	this->cameraUpDirection = normalize(upDirection);
 }
 void DisplayCalculator::SetCameraFieldOfView(float width, float height)
 {

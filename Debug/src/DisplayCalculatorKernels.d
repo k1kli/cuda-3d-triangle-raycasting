@@ -149,4 +149,5 @@ src/DisplayCalculatorKernels.o : ../src/DisplayCalculatorKernels.cu \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/surface_indirect_functions.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/device_launch_parameters.h \
     ../src/DisplayCalculatorKernels.h \
-    ../src/Mesh.h
+    ../src/Mesh.h \
+    ../include/cudaInclude/helper_math.h

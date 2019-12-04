@@ -7,24 +7,32 @@
 #include <glew.h>
 #include <GL/glut.h>
 #include <cuda_gl_interop.h>
+#include <stdio.h>
+#include <cmath>
+#include <fstream>
 #include <iostream>
 #include <vector>
+#include <strstream>
 #include "DisplayCalculator.h"
-#include <helper_cuda.h>
 
 // includes CUDA
 #include <cuda_runtime.h>
 #include <helper_timer.h>
+#include <helper_cuda.h>
+#include <helper_math.h>
+#include "defines.h"
 
 using namespace std;
 
 DisplayCalculator displayCalculator;
 char  windowTitle[50];
-int mouseXPos;
-int mouseYPos;
+int lastMouseX;
+int lastMouseY;
 bool lmbDown = false;
 GLuint bufferID;
 GLuint textureID;
+float angleY = 0;
+float angleX = 0;
 
 void checkGLError()
 {
@@ -32,6 +40,50 @@ void checkGLError()
     while(( err = glGetError())){
         std::cout << err;
     }
+}
+
+float3 rotationXRows[] = {
+		make_float3(1,0,0),
+		make_float3(0,1,0),
+		make_float3(0,0,1)
+};
+float3 rotationYRows[] = {
+		make_float3(1,0,0),
+		make_float3(0,1,0),
+		make_float3(0,0,1)
+};
+
+void UpdateRotationMatrices()
+{
+	float sX = sin(angleX);
+	float sY = sin(angleY);
+	float cX = cos(angleX);
+	float cY = cos(angleY);
+	rotationXRows[1] = make_float3(0, cX, -sX);
+	rotationXRows[2] = make_float3(0, sX,  cX);
+
+	rotationYRows[0] = make_float3(cY, 0, sY);
+	rotationYRows[2] = make_float3(-sY, 0, cY);
+}
+float3 multiplyPoint3x3(float3 point, float3 matrix3x3Rows[3])
+{
+	return make_float3(dot(point, matrix3x3Rows[0]),dot(point, matrix3x3Rows[1]),dot(point, matrix3x3Rows[2]));
+}
+
+void UpdateCameraPosition()
+{
+	angleY += 0.02f*PI*(lastMouseX-displayCalculator.mapWidth/2)/displayCalculator.mapWidth;
+	angleX += 0.02f*PI*(lastMouseY-displayCalculator.mapHeight/2)/displayCalculator.mapHeight;
+	UpdateRotationMatrices();
+	float distance = 10;
+	float3 camera = make_float3(0,0, -distance);
+	float3 cameraPlusUp = camera+make_float3(0,1.f,-distance);
+	camera = multiplyPoint3x3(camera, rotationXRows);
+	camera = multiplyPoint3x3(camera, rotationYRows);
+	cameraPlusUp = multiplyPoint3x3(cameraPlusUp, rotationXRows);
+	cameraPlusUp = multiplyPoint3x3(cameraPlusUp, rotationYRows);
+	displayCalculator.SetCameraPosition(camera);
+	displayCalculator.SetCameraLookAt(displayCalculator.lookAt,cameraPlusUp);
 }
 
 void Display()
@@ -43,7 +95,8 @@ void Display()
 	glClearColor(1.0,0.0,1.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	checkGLError();
-	displayCalculator.GenerateDisplay();
+	UpdateCameraPosition();
+	displayCalculator.GenerateDisplayPerspective();
 //	int k = cudaGLUnmapBufferObject(bufferID);
 	glBindBuffer( GL_PIXEL_UNPACK_BUFFER, bufferID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
@@ -93,22 +146,16 @@ void Reshape(int width, int height)
 	displayCalculator.mapHeight = height;
 	printf("Width = %d, height = %d\n", width, height);
 	cudaGLMapBufferObject((void **)&displayCalculator.d_colorMap,bufferID);
+	lastMouseX = width/2;
+	lastMouseY = height/2;
 	glutPostRedisplay();
 
 }
-void Mouse(int button, int state, int x, int y)
-{
-	if(button == GLUT_LEFT_BUTTON)
-	{
-		if(state==GLUT_DOWN)
-			exit(0);
-		lmbDown = (state==GLUT_DOWN);
-	}
-}
 void MouseMotion(int x, int y)
 {
-	mouseXPos = x;
-	mouseYPos = y;
+	lastMouseX = x;
+	lastMouseY = y;
+
 }
 
 void bindTexture(int width, int height)
@@ -132,36 +179,91 @@ void bindTexture(int width, int height)
 
 }
 
-void CreateMesh()
+void CreateDefaultMesh()
 {
-	const int pointsLen = 8;
-	const int trianglesLen = 15;
+	const int pointsLen = 4;
+	const int trianglesLen = 12;
 	float3 points[pointsLen]
 	              {
-				make_float3(0.0f, 0.0f, 0.0f),
-				make_float3(0.0f, 0.0f, 1.0f),
-				make_float3(0.0f, 1.0f, 0.0f),
-				make_float3(0.0f, 1.0f, 1.0f),
-				make_float3(1.0f, 0.0f, 0.0f),
-				make_float3(1.0f, 0.0f, 1.0f),
-				make_float3(1.0f, 1.0f, 0.0f),
-				make_float3(1.0f, 1.0f, 1.0f)
+				make_float3(sqrt(8.f/9.f), 0.0f, -1.f/3.f),
+				make_float3(-sqrt(2.f/9.f), sqrt(2.f/3.f), -1.f/3.f),
+				make_float3(-sqrt(2.f/9.f), -sqrt(2.f/3.f), -1.f/3.f),
+				make_float3(0.0f, 0.0f, 1.0f)
 	              };
 	int triangles[trianglesLen]
 	              {
-				4,2,0,
-				0,4,1,
-				0,1,2,
-				4,7,2,
-				7,1,2
+				2,0,1,
+				3,2,1,
+				2,3,0,
+				1,0,3
 	              };
+
 	displayCalculator.mesh.SetPoints(points,pointsLen);
 	displayCalculator.mesh.SetTriangles(triangles,trianglesLen);
 	displayCalculator.mesh.RecalculateNormals();
+}
+
+bool LoadMeshFromFile(char * filename)
+{
+	ifstream f(filename);
+	if(!f.is_open())
+	{
+		printf("failed to load from file %s\n", filename);
+		return false;
+	}
+	vector<float3> vertices;
+	vector<int> triangles;
+	while(!f.eof())
+	{
+		char line[128];
+		f.getline(line, 128);
+
+		strstream s;
+		s << line;
+
+		char junk;
+
+		if(line[0] == 'v')
+		{
+			float3 v;
+				s >> junk >> v.x >> v.y >> v.z;
+				vertices.push_back(v);
+		}
+		if(line[0] == 'f')
+		{
+			int a[3];
+				s >> junk >> a[0] >> a[1] >> a[2];
+			triangles.push_back(a[0]-1);
+			triangles.push_back(a[1]-1);
+			triangles.push_back(a[2]-1);
+		}
+	}
+
+	displayCalculator.mesh.SetPoints(vertices.data(),vertices.size());
+	displayCalculator.mesh.SetTriangles(triangles.data(),triangles.size());
+	displayCalculator.mesh.RecalculateNormals();
+	return true;
+}
+
+void CreateMesh(int argc, char **argv)
+{
+	if(argc != 2)
+	{
+		CreateDefaultMesh();
+	}
+	else
+	{
+		if(!LoadMeshFromFile(argv[1]))
+		{
+			CreateDefaultMesh();
+		}
+	}
+	printf("triangles=%d, vertices=%d\n", displayCalculator.mesh.trianglesLength, displayCalculator.mesh.pointsLength);
 	displayCalculator.mesh.CopyToDevice();
-	displayCalculator.SetCameraPosition(make_float4(0.0f, 0.0f, -3.0f, 0.0f));
-	displayCalculator.SetCameraLookAt(make_float3(0.0f, 0.0f, 0.0f),make_float3(0.0f, 1.0f, 0.0f));
-	displayCalculator.SetCameraFieldOfView(2.0f, 2.0f);
+
+	UpdateCameraPosition();
+	displayCalculator.SetCameraLookAt(make_float3(0.0f, 0.0f, 0.0f),make_float3(0,1.f,0));
+	displayCalculator.SetCameraFieldOfView(20.0f, 20.0f);
 }
 
 void StartGL(int argc, char **argv)
@@ -173,10 +275,9 @@ void StartGL(int argc, char **argv)
 	glewInit();
 	glutDisplayFunc(Display);
 	glutReshapeFunc(Reshape);
-	glutMouseFunc(Mouse);
 	glutPassiveMotionFunc(MouseMotion);
 	bindTexture(600,600);
-	CreateMesh();
+	CreateMesh(argc, argv);
 	glutMainLoop();
 }
 

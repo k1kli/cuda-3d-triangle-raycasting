@@ -11,34 +11,26 @@
 
 struct DeviceMeshData
 {
-	float4 * d_points;
-	int * d_triangles;
-	float4 * d_normals;
-	float4 * d_triangleNormals;
 	int pointsLength;
 	int trianglesLength;
 };
 class Mesh {
-	float4 * points;
-	int * triangles;
-	float4 * normals;
-	float4 * triangleNormals;
-	float4 * d_points;
-	int * d_triangles;
-	float4 * d_normals;
-	float4 * d_triangleNormals;
-	int pointsLength = 0;
-	int trianglesLength = 0;
+	float3 * points;
+	short * triangles;
+	float3 * normals;
 	bool initialized = false;
 public:
+	int pointsLength = 0;
+	int trianglesLength = 0;
 	Mesh();
 	virtual ~Mesh();
 	void SetPoints(float3 * points, int length);
 	void SetTriangles(int * triangles, int length);
+	void SetNormals(float3 normals[]);
 	void RecalculateNormals();
 	void CopyToDevice();
 	bool IsInitialized();
-	DeviceMeshData * GetDeviceMeshDataPointer();
+	DeviceMeshData GetDeviceMeshData();
 	friend class DisplayCalculator;
 };
 

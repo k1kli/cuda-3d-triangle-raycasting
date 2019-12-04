@@ -11,12 +11,12 @@
 #include "Mesh.h"
 
 class DisplayCalculator {
-	float4 cameraPosition;
-	float4 lookAt;
-	float4 cameraUpDirection;
 	float fovWidth;
 	float fovHeight;
 public:
+	float3 cameraPosition;
+	float3 lookAt;
+	float3 cameraUpDirection;
 	int * d_colorMap;
 	Mesh mesh;
 	int mapWidth;
@@ -24,7 +24,8 @@ public:
 	DisplayCalculator();
 	virtual ~DisplayCalculator();
 	void GenerateDisplay();
-	void SetCameraPosition(float4 position);
+	void GenerateDisplayPerspective();
+	void SetCameraPosition(float3 position);
 	void SetCameraLookAt(float3 lookAt, float3 upDirection);
 	void SetCameraFieldOfView(float width, float height);
 };

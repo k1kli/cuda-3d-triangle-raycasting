@@ -9,12 +9,19 @@
 #define DISPLAYCALCULATORKERNELS_H_
 #include "Mesh.h"
 
+void SaveToConstantMemory(float3 * h_vertices, float3 * h_normals, short * h_triangles, int verticesLenght, int trianglesLength);
+
 __global__ void CastRaysOrthogonal(
-		float4 cameraTopLeftCorner, float4 rayDirection, float4 up,
-		float cameraFovWidth, float cameraFovHeight,
+		float3 cameraBottomLeftCorner, float3 rayDirection, float3 xOffset, float3 yOffset,
 		int width, int height,
-		int * colorMap, DeviceMeshData * mesh);
+		int * colorMap, DeviceMeshData mesh);
 
-
+__global__ void CastRaysPerspective(
+		float3 cameraCenter,
+		float nearDistance, float farDistance,
+		float3 xFarOffset, float3 yFarOffset,
+		float3 forward,
+		int width, int height,
+		int * colorMap, DeviceMeshData mesh);
 
 #endif /* DISPLAYCALCULATORKERNELS_H_ */
