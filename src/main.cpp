@@ -261,7 +261,7 @@ void CreateMesh(int argc, char **argv)
 
 	UpdateCameraPosition();
 	displayCalculator.SetCameraLookAt(make_float3(0.0f, 0.0f, 0.0f),make_float3(0,1.f,0));
-	displayCalculator.SetCameraFieldOfView(20.0f, 20.0f);
+	displayCalculator.SetCameraFieldOfView(50.0f, 50.0f);
 }
 
 void StartGL(int argc, char **argv)
