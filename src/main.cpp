@@ -200,7 +200,6 @@ void CreateDefaultMesh()
 
 	displayCalculator.mesh.SetPoints(points,pointsLen);
 	displayCalculator.mesh.SetTriangles(triangles,trianglesLen);
-	displayCalculator.mesh.RecalculateNormals();
 }
 
 bool LoadMeshFromFile(char * filename)
@@ -241,7 +240,6 @@ bool LoadMeshFromFile(char * filename)
 
 	displayCalculator.mesh.SetPoints(vertices.data(),vertices.size());
 	displayCalculator.mesh.SetTriangles(triangles.data(),triangles.size());
-	displayCalculator.mesh.RecalculateNormals();
 	return true;
 }
 

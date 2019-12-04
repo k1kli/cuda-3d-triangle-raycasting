@@ -17,7 +17,6 @@ struct DeviceMeshData
 class Mesh {
 	float3 * points;
 	short * triangles;
-	float3 * normals;
 	bool initialized = false;
 public:
 	int pointsLength = 0;
@@ -26,8 +25,6 @@ public:
 	virtual ~Mesh();
 	void SetPoints(float3 * points, int length);
 	void SetTriangles(int * triangles, int length);
-	void SetNormals(float3 normals[]);
-	void RecalculateNormals();
 	void CopyToDevice();
 	bool IsInitialized();
 	DeviceMeshData GetDeviceMeshData();

@@ -5,8 +5,7 @@
 #include <helper_math.h>
 
 
-__device__ __constant__ float3 c_vertices[2048];//24kb
-__device__ __constant__ float3 c_normals[2048];//24kb
+__device__ __constant__ float3 c_vertices[4096];//48kb
 __device__ __constant__ short c_triangles[6*1024];//12kb
 __device__ __constant__ float3 lightColor;
 __device__ __constant__ float3 lightPos;
@@ -14,11 +13,9 @@ __device__ __constant__ uint objectColor = 0xFFFFFF;
 __device__ __constant__ float3 zero;
 __device__ __constant__ float3 one;
 
-void SaveToConstantMemory(float3 * h_vertices, float3 * h_normals, short * h_triangles, int verticesLenght, int trianglesLength)
+void SaveToConstantMemory(float3 * h_vertices, short * h_triangles, int verticesLenght, int trianglesLength)
 {
 	cudaMemcpyToSymbol(c_vertices, h_vertices, sizeof(float3)*verticesLenght,0,cudaMemcpyHostToDevice);
-
-	cudaMemcpyToSymbol(c_normals, h_normals, sizeof(float3)*verticesLenght,0,cudaMemcpyHostToDevice);
 
 	cudaMemcpyToSymbol(c_triangles, h_triangles, sizeof(short)*trianglesLength,0,cudaMemcpyHostToDevice);
 
@@ -34,7 +31,7 @@ void SaveToConstantMemory(float3 * h_vertices, float3 * h_normals, short * h_tri
 
 	cudaMemcpyToSymbol(one, &h_one, sizeof(float3),0,cudaMemcpyHostToDevice);
 
-	float3 h_lightPos = make_float3(0.0f,0.0f,-1.0f);
+	float3 h_lightPos = make_float3(-2.0f,3.0f,-2.0f);
 
 	cudaMemcpyToSymbol(lightPos, &h_lightPos, sizeof(float3),0,cudaMemcpyHostToDevice);
 }
@@ -136,19 +133,22 @@ __device__ unsigned int GetColorOfClosestHitpoint(float3 &  ray, float3 &  raySt
 	else
 	{
 		int l = 1-closestTUVCoords.y-closestTUVCoords.z;
-		float3 hitPointNormal = l*c_normals[c_triangles[idOfClosest]];
+//		float3 hitPointNormal = l*c_normals[c_triangles[idOfClosest]];
+//
+//		hitPointNormal +=closestTUVCoords.y*c_normals[c_triangles[idOfClosest+1]];
+//
+//		hitPointNormal += closestTUVCoords.z*c_normals[c_triangles[idOfClosest+2]];
 
-		hitPointNormal +=closestTUVCoords.y*c_normals[c_triangles[idOfClosest+1]];
+		float3 hitPoint = l*c_vertices[c_triangles[idOfClosest]];
+		hitPoint += closestTUVCoords.y*c_vertices[c_triangles[idOfClosest+1]];
+		hitPoint += closestTUVCoords.z*c_vertices[c_triangles[idOfClosest+2]];
 
-		hitPointNormal += closestTUVCoords.z*c_normals[c_triangles[idOfClosest+2]];
-
-		float3 hitPoint = c_vertices[c_triangles[idOfClosest]];
-		hitPoint = closestTUVCoords.y*c_vertices[c_triangles[idOfClosest+1]];
-		hitPoint = closestTUVCoords.z*c_vertices[c_triangles[idOfClosest+2]];
-
-		hitPointNormal = normalize(hitPointNormal);
+		float3 hitPointNormal = normalize(cross(
+				c_vertices[c_triangles[idOfClosest+1]]-c_vertices[c_triangles[idOfClosest]],
+				c_vertices[c_triangles[idOfClosest+2]]-c_vertices[c_triangles[idOfClosest]]
+				                                                  ));
 		float3 toLight = normalize(lightPos - hitPoint);
-		unsigned int color = CalculateLight(toLight, -ray, hitPointNormal, 0.8f, 0.3f, 20);
+		unsigned int color = CalculateLight(toLight, -ray, hitPointNormal, 0.3f, 0.7f, 80);
 		return color;
 
 	}
@@ -156,8 +156,8 @@ __device__ unsigned int GetColorOfClosestHitpoint(float3 &  ray, float3 &  raySt
 __device__ unsigned int CalculateLight(float3 toLight, float3 toObserver, float3 &  normalVector,
 		float diffuseFactor, float specularFactor, int m)
 {
-	float3 reflectVector = reflect(-toLight, normalVector);
-	float firstDot = dot(normalVector,reflectVector);
+	float3 reflectVector = 2*dot(toLight, normalVector)*normalVector-toLight;
+	float firstDot = dot(toLight,normalVector);
 	float secondDot = dot(reflectVector, toObserver);
 	secondDot = powf(secondDot, m);
 	float3 floatColor = clamp(lightColor*(diffuseFactor*firstDot+specularFactor*secondDot),zero, one);
