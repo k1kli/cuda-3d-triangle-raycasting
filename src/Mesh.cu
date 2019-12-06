@@ -10,9 +10,10 @@
 #include <helper_math.h>
 #include <helper_cuda.h>
 #include "DisplayCalculatorKernels.h"
+#include "mat4x4.h"
 
 Mesh::Mesh() {
-	// TODO Auto-generated constructor stub
+	worldMatrix = getIdentityMatrix();
 
 }
 
@@ -70,9 +71,31 @@ void Mesh::CopyToDevice()
 	{
 		throw "Initialize triangles, points  first";
 	}
-	SaveToConstantMemory(points, triangles, pointsLength, trianglesLength);
+	if(this->d_points != nullptr)
+	{
+		cudaFree(d_points);
+	}
+	if(this->d_points_transformed != nullptr)
+	{
+		cudaFree(d_points_transformed);
+	}
+	cudaMalloc(&d_points, sizeof(float3)*pointsLength);
+	getLastCudaError("couldn't malloc d_points in mesh");
+
+	cudaMalloc(&d_points_transformed, sizeof(float3)*pointsLength);
+	getLastCudaError("couldn't malloc d_points_transformed in mesh");
+
+	cudaMemcpy(d_points, points, sizeof(float3)*pointsLength, cudaMemcpyHostToDevice);
+	getLastCudaError("couldn't memcpy points in mesh");
+
+	SaveToConstantMemory(triangles, pointsLength, trianglesLength);
 	getLastCudaError("Couldn't memcpy data to constant for Mesh");
 	initialized = true;
+}
+void Mesh::UpdateMeshVertices()
+{
+	worldMatrix.multiplyAllVectors(d_points, d_points_transformed, pointsLength);
+	SaveVerticesToConstantMemory(d_points_transformed, pointsLength);
 }
 
 bool Mesh::IsInitialized() {
@@ -85,4 +108,8 @@ DeviceMeshData Mesh::GetDeviceMeshData() {
 	res.trianglesLength = trianglesLength;
 
 	return res;
+}
+void Mesh::SetWorldMatrix(mat4x4 matrix)
+{
+	worldMatrix = matrix;
 }

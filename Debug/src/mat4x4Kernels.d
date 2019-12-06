@@ -1,4 +1,4 @@
-src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
+src/mat4x4Kernels.o : ../src/mat4x4Kernels.cu \
     /usr/include/stdc-predef.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/cuda_runtime.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/crt/host_config.h \
@@ -148,8 +148,12 @@ src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/texture_indirect_functions.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/surface_indirect_functions.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/device_launch_parameters.h \
-    ../src/DisplayCalculator.h \
-    ../src/Mesh.h \
+    /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/cuda.h \
+    /usr/lib/gcc/x86_64-linux-gnu/7/include/stdint.h \
+    /usr/include/stdint.h \
+    /usr/include/x86_64-linux-gnu/bits/wchar.h \
+    /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+    ../src/mat4x4Kernels.h \
     ../src/mat4x4.h \
     ../include/cudaInclude/helper_math.h \
     /usr/include/c++/7/iostream \
@@ -161,7 +165,6 @@ src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
     /usr/include/c++/7/bits/postypes.h \
     /usr/include/c++/7/cwchar \
     /usr/include/wchar.h \
-    /usr/include/x86_64-linux-gnu/bits/wchar.h \
     /usr/include/x86_64-linux-gnu/bits/types/wint_t.h \
     /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h \
     /usr/include/c++/7/bits/char_traits.h \
@@ -177,9 +180,6 @@ src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
     /usr/include/c++/7/debug/debug.h \
     /usr/include/c++/7/bits/predefined_ops.h \
     /usr/include/c++/7/cstdint \
-    /usr/lib/gcc/x86_64-linux-gnu/7/include/stdint.h \
-    /usr/include/stdint.h \
-    /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
     /usr/include/c++/7/bits/localefwd.h \
     /usr/include/x86_64-linux-gnu/c++/7/bits/c++locale.h \
     /usr/include/c++/7/clocale \
@@ -240,13 +240,4 @@ src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
     /usr/include/c++/7/bits/basic_ios.tcc \
     /usr/include/c++/7/bits/ostream.tcc \
     /usr/include/c++/7/istream \
-    /usr/include/c++/7/bits/istream.tcc \
-    ../src/defines.h \
-    ../include/cudaInclude/helper_cuda.h \
-    ../include/cudaInclude/helper_string.h \
-    /usr/include/c++/7/fstream \
-    /usr/include/c++/7/bits/codecvt.h \
-    /usr/include/x86_64-linux-gnu/c++/7/bits/basic_file.h \
-    /usr/include/x86_64-linux-gnu/c++/7/bits/c++io.h \
-    /usr/include/c++/7/bits/fstream.tcc \
-    ../src/DisplayCalculatorKernels.h
+    /usr/include/c++/7/bits/istream.tcc

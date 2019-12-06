@@ -149,15 +149,10 @@ src/Mesh.o : ../src/Mesh.cu \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/surface_indirect_functions.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/device_launch_parameters.h \
     ../src/Mesh.h \
+    ../src/mat4x4.h \
     ../include/cudaInclude/helper_math.h \
-    ../include/cudaInclude/helper_cuda.h \
-    /usr/lib/gcc/x86_64-linux-gnu/7/include/stdint.h \
-    /usr/include/stdint.h \
-    /usr/include/x86_64-linux-gnu/bits/wchar.h \
-    /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
-    ../include/cudaInclude/helper_string.h \
-    /usr/include/c++/7/fstream \
-    /usr/include/c++/7/istream \
+    /usr/include/c++/7/iostream \
+    /usr/include/c++/7/ostream \
     /usr/include/c++/7/ios \
     /usr/include/c++/7/iosfwd \
     /usr/include/c++/7/bits/stringfwd.h \
@@ -165,6 +160,7 @@ src/Mesh.o : ../src/Mesh.cu \
     /usr/include/c++/7/bits/postypes.h \
     /usr/include/c++/7/cwchar \
     /usr/include/wchar.h \
+    /usr/include/x86_64-linux-gnu/bits/wchar.h \
     /usr/include/x86_64-linux-gnu/bits/types/wint_t.h \
     /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h \
     /usr/include/c++/7/bits/char_traits.h \
@@ -180,6 +176,9 @@ src/Mesh.o : ../src/Mesh.cu \
     /usr/include/c++/7/debug/debug.h \
     /usr/include/c++/7/bits/predefined_ops.h \
     /usr/include/c++/7/cstdint \
+    /usr/lib/gcc/x86_64-linux-gnu/7/include/stdint.h \
+    /usr/include/stdint.h \
+    /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
     /usr/include/c++/7/bits/localefwd.h \
     /usr/include/x86_64-linux-gnu/c++/7/bits/c++locale.h \
     /usr/include/c++/7/clocale \
@@ -238,9 +237,12 @@ src/Mesh.o : ../src/Mesh.cu \
     /usr/include/x86_64-linux-gnu/c++/7/bits/ctype_inline.h \
     /usr/include/c++/7/bits/locale_facets.tcc \
     /usr/include/c++/7/bits/basic_ios.tcc \
-    /usr/include/c++/7/ostream \
     /usr/include/c++/7/bits/ostream.tcc \
+    /usr/include/c++/7/istream \
     /usr/include/c++/7/bits/istream.tcc \
+    ../include/cudaInclude/helper_cuda.h \
+    ../include/cudaInclude/helper_string.h \
+    /usr/include/c++/7/fstream \
     /usr/include/c++/7/bits/codecvt.h \
     /usr/include/x86_64-linux-gnu/c++/7/bits/basic_file.h \
     /usr/include/x86_64-linux-gnu/c++/7/bits/c++io.h \

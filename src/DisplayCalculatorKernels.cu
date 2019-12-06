@@ -3,6 +3,7 @@
 #include "Mesh.h"
 #include "stdio.h"
 #include <helper_math.h>
+#include "defines.h"
 
 
 __device__ __constant__ float3 c_vertices[4096];//48kb
@@ -12,10 +13,11 @@ __device__ __constant__ float3 lightPos;
 __device__ __constant__ uint objectColor = 0xFFFFFF;
 __device__ __constant__ float3 zero;
 __device__ __constant__ float3 one;
+__device__ __constant__ float3 toObserver;
+__device__ __constant__ float3 ray;
 
-void SaveToConstantMemory(float3 * h_vertices, short * h_triangles, int verticesLenght, int trianglesLength)
+void SaveToConstantMemory(short * h_triangles, int verticesLenght, int trianglesLength)
 {
-	cudaMemcpyToSymbol(c_vertices, h_vertices, sizeof(float3)*verticesLenght,0,cudaMemcpyHostToDevice);
 
 	cudaMemcpyToSymbol(c_triangles, h_triangles, sizeof(short)*trianglesLength,0,cudaMemcpyHostToDevice);
 
@@ -34,22 +36,34 @@ void SaveToConstantMemory(float3 * h_vertices, short * h_triangles, int vertices
 	float3 h_lightPos = make_float3(-2.0f,3.0f,-2.0f);
 
 	cudaMemcpyToSymbol(lightPos, &h_lightPos, sizeof(float3),0,cudaMemcpyHostToDevice);
+
+	float3 h_toObserver = make_float3(0.0f, 0.0f, -1.0f);
+
+	cudaMemcpyToSymbol(toObserver, &h_toObserver, sizeof(float3),0,cudaMemcpyHostToDevice);
+
+	float3 h_ray = make_float3(0.0f, 0.0f, 1.0f);
+
+	cudaMemcpyToSymbol(ray, &h_ray, sizeof(float3),0,cudaMemcpyHostToDevice);
+}
+void SaveVerticesToConstantMemory(float3 * d_vertices, int length)
+{
+	cudaMemcpyToSymbol(c_vertices, d_vertices, sizeof(float3)*length,0,cudaMemcpyDeviceToDevice);
 }
 
-__device__ unsigned int GetColorOfClosestHitpoint(float3 &  ray, float3 &  rayStartingPoint,
+__device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
 		DeviceMeshData * p_mesh);
 
 
-__device__ bool GetIntersectionPointWith(float3 &  ray, float3 &  rayStartingPoint,
-		float3 & v0, float3 &  v1, float3 &  v2, float3 * tuv);
+__device__ bool RayIntersectsWith(float3 &  rayStartingPoint,
+		float3 & v1, float3 &  v2, float3 &  v3);
 
 
-__device__ unsigned int CalculateLight(float3 toLight, float3  toObserver, float3 &  normalVector,
+__device__ unsigned int CalculateLight(float3 toLight, float3 &  normalVector,
 		float diffuseFactor, float specularFactor, int m);
 
 
 __global__ void CastRaysOrthogonal(
-		float3 cameraBottomLeftCorner, float3 rayDirection, float3 xOffset, float3 yOffset,
+		float3 cameraBottomLeftCorner, float3 xOffset, float3 yOffset,
 		int width, int height,
 		int * colorMap, DeviceMeshData mesh)
 {
@@ -66,94 +80,56 @@ __global__ void CastRaysOrthogonal(
 		float3 rayStartingPoint = cameraBottomLeftCorner
 				+xOffset*mapIndexX
 				+yOffset*mapIndexY;
-		colorMap[mapIndex] = GetColorOfClosestHitpoint(rayDirection, rayStartingPoint, &mesh);
-
-	}
-}
-__global__ void CastRaysPerspective(
-		float3 cameraCenter,
-		float nearDistance, float farDistance,
-		float3 xFarOffset, float3 yFarOffset,
-		float3 forward,
-		int width, int height,
-		int * colorMap, DeviceMeshData mesh)
-{
-	const unsigned int threadX = threadIdx.x;
-	const unsigned int threadY = threadIdx.y;
-	const unsigned int blockX = blockIdx.x;
-	const unsigned int blockY = blockIdx.y;
-//	if(threadX + blockX == 0 && threadY+blockY == 0)
-//	{
-//		printf("c_triangles[012] = (%s, %s, %s)\n", c_triangles[0], c_triangles[1], c_triangles[2]);
-//	}
-
-	const unsigned int mapIndexX = blockX*blockDim.x+threadX;
-	const unsigned int mapIndexY = blockY*blockDim.y+threadY;
-	if(mapIndexX < width && mapIndexY < height)
-	{
-		const unsigned int mapIndex = mapIndexY*width+mapIndexX;
-		float3 rayStartingPoint = cameraCenter - forward*nearDistance;
-		float3 rayDirection = normalize(forward * farDistance
-				-xFarOffset*(mapIndexX-width/2.f)
-				+yFarOffset*(mapIndexY-height/2.f));
-
-		colorMap[mapIndex] = GetColorOfClosestHitpoint(rayDirection, rayStartingPoint, &mesh);
+		colorMap[mapIndex] = GetColorOfClosestHitpoint(rayStartingPoint, &mesh);
 
 	}
 }
 //based on http://geomalgorithms.com/a06-_intersect-2.html#intersect3D_RayTriangle()
-__device__ unsigned int GetColorOfClosestHitpoint(float3 &  ray, float3 &  rayStartingPoint,
+__device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
 		DeviceMeshData * p_mesh)
 {
-	int trianglesCount = p_mesh->trianglesLength/3;
 	int idOfClosest;
-	float3 closestTUVCoords = make_float3(INFINITY, 0,0);
-	for(int i = 0; i < trianglesCount; i++)
+	float closestDistance = INFINITY;
+	float3 closestHitPointNormal;
+	for(int triangleId = 0; triangleId < p_mesh->trianglesLength; triangleId+=3)
 	{
-		int triangleId = i;
-		triangleId*=3;
 		float3 p1 = c_vertices[c_triangles[triangleId]];
 		float3 p2 = c_vertices[c_triangles[triangleId+1]];
 		float3 p3 = c_vertices[c_triangles[triangleId+2]];
-		float3 tuv;
-		if(GetIntersectionPointWith(ray, rayStartingPoint,
-				p1, p2, p3, &tuv))
+		float minX = MIN(p1.x, MIN(p2.x,p3.x));
+		float maxX = MAX(p1.x, MAX(p2.x,p3.x));
+		float minY = MIN(p1.y, MIN(p2.y,p3.y));
+		float maxY = MAX(p1.y, MAX(p2.y,p3.y));
+		if(rayStartingPoint.x >= minX && rayStartingPoint.y >= minY && rayStartingPoint.x <= maxX && rayStartingPoint.y <= maxY
+				&& RayIntersectsWith(rayStartingPoint,p1, p2, p3))
 		{
-			if(tuv.x<closestTUVCoords.x)
+			float3 hitPointNormal = normalize(cross(p2-p1, p3-p1));
+			float distance = dot(p1-rayStartingPoint, hitPointNormal)/hitPointNormal.z;
+			if(closestDistance > distance)
 			{
-				closestTUVCoords = tuv;
+				closestDistance = distance;
 				idOfClosest = triangleId;
+				closestHitPointNormal = hitPointNormal;
 			}
 		}
 	}
-	if(closestTUVCoords.x == INFINITY)
+	if(closestDistance == INFINITY)
 	{
 		return 0xFF5555FF;
 	}
 	else
 	{
-		int l = 1-closestTUVCoords.y-closestTUVCoords.z;
-//		float3 hitPointNormal = l*c_normals[c_triangles[idOfClosest]];
-//
-//		hitPointNormal +=closestTUVCoords.y*c_normals[c_triangles[idOfClosest+1]];
-//
-//		hitPointNormal += closestTUVCoords.z*c_normals[c_triangles[idOfClosest+2]];
 
-		float3 hitPoint = l*c_vertices[c_triangles[idOfClosest]];
-		hitPoint += closestTUVCoords.y*c_vertices[c_triangles[idOfClosest+1]];
-		hitPoint += closestTUVCoords.z*c_vertices[c_triangles[idOfClosest+2]];
+		float3 hitPoint = make_float3(rayStartingPoint.x, rayStartingPoint.y, rayStartingPoint.z+closestDistance);
 
-		float3 hitPointNormal = normalize(cross(
-				c_vertices[c_triangles[idOfClosest+1]]-c_vertices[c_triangles[idOfClosest]],
-				c_vertices[c_triangles[idOfClosest+2]]-c_vertices[c_triangles[idOfClosest]]
-				                                                  ));
+
 		float3 toLight = normalize(lightPos - hitPoint);
-		unsigned int color = CalculateLight(toLight, -ray, hitPointNormal, 0.3f, 0.7f, 80);
+		unsigned int color = CalculateLight(toLight, closestHitPointNormal, 0.3f, 0.7f, 80);
 		return color;
 
 	}
 }
-__device__ unsigned int CalculateLight(float3 toLight, float3 toObserver, float3 &  normalVector,
+__device__ unsigned int CalculateLight(float3 toLight, float3 &  normalVector,
 		float diffuseFactor, float specularFactor, int m)
 {
 	float3 reflectVector = 2*dot(toLight, normalVector)*normalVector-toLight;
@@ -170,22 +146,18 @@ __device__ unsigned int CalculateLight(float3 toLight, float3 toObserver, float3
 
 }
 
-inline __device__ bool GetIntersectionPointWith(float3 &  ray, float3 &  rayStartingPoint,
-		float3 &  v0, float3 &  v1, float3 &  v2, float3 * tuv)
+inline __device__ bool RayIntersectsWith(float3 & rayStartingPoint,
+		float3 &  v1, float3 &  v2, float3 &  v3)
 {
-	float3 v0v1 = v1-v0;
-	float3 v0v2 = v2-v0;
-	float3 pvec = cross(ray,v0v2);
-	float det = dot(v0v1,pvec);
-	if(det<0.01f)
-	{
-		return false;
-	}
-	float invDet = 1.0f / det;
-	float3 tvec = rayStartingPoint-v0;
-	float3 qvec = cross(tvec, v0v1);
-
-	*tuv = make_float3(dot(v0v2,qvec),dot(tvec,pvec), dot(ray, qvec));
-	*tuv *= invDet;
-	return !(tuv->y < 0 || tuv->y > 1 || tuv->z < 0 || tuv->y + tuv->z > 1);
+	float a = v2.y-v3.y;
+	float b = v1.x-v3.x;
+	float c = v3.x-v2.x;
+	float d = v1.y-v3.y;
+	float e = rayStartingPoint.x-v3.x;
+	float f = rayStartingPoint.y-v3.y;
+	float det = a*b+c*d;
+	float s = (a*e+c*f)/det;
+	if(s < 0) return false;
+	float t = (-d*e+b*f)/det;
+	return t>= 0 && s+t <= 1;
 }

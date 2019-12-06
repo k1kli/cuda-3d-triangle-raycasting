@@ -6,7 +6,9 @@
 CU_SRCS += \
 ../src/DisplayCalculator.cu \
 ../src/DisplayCalculatorKernels.cu \
-../src/Mesh.cu 
+../src/Mesh.cu \
+../src/mat4x4.cu \
+../src/mat4x4Kernels.cu 
 
 CPP_SRCS += \
 ../src/main.cpp 
@@ -15,12 +17,16 @@ OBJS += \
 ./src/DisplayCalculator.o \
 ./src/DisplayCalculatorKernels.o \
 ./src/Mesh.o \
-./src/main.o 
+./src/main.o \
+./src/mat4x4.o \
+./src/mat4x4Kernels.o 
 
 CU_DEPS += \
 ./src/DisplayCalculator.d \
 ./src/DisplayCalculatorKernels.d \
-./src/Mesh.d 
+./src/Mesh.d \
+./src/mat4x4.d \
+./src/mat4x4Kernels.d 
 
 CPP_DEPS += \
 ./src/main.d 
