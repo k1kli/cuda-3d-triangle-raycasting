@@ -12,8 +12,9 @@
 #include "DisplayCalculatorKernels.h"
 #include "mat4x4.h"
 
-Mesh::Mesh() {
+Mesh::Mesh(bool onCPU) {
 	worldMatrix = getIdentityMatrix();
+	this->onCPU = onCPU;
 
 }
 
@@ -21,10 +22,20 @@ Mesh::~Mesh() {
 	if(points != nullptr)
 	{
 		delete[] points;
+		if(onCPU)
+			delete[] this->cpu_points_transformed;
 	}
 	if(triangles != nullptr)
 	{
 		delete[] triangles;
+	}
+	if(this->d_points != nullptr)
+	{
+		cudaFree(d_points);
+	}
+	if(this->d_points_transformed != nullptr)
+	{
+		cudaFree(d_points_transformed);
 	}
 
 }
@@ -33,8 +44,12 @@ void Mesh::SetPoints(float3 points[], int length)
 	if(this->points != nullptr)
 	{
 		delete[] this->points;
+		if(onCPU)
+			delete[] this->cpu_points_transformed;
 	}
 	this->points = new float3[length];
+	if(onCPU)
+		this->cpu_points_transformed = new float3[length];
 	for(int i = 0; i < length; i++)
 	{
 		this->points[i] = points[i];
@@ -64,9 +79,12 @@ void Mesh::SetTriangles(int triangles[], int length)
 		this->triangles[i] = (short)triangles[i];
 	}
 	trianglesLength = length;
+	if(onCPU) initialized = true;
 }
 void Mesh::CopyToDevice()
 {
+	if(onCPU)
+		throw "You shouldn't do this on cpu";
 	if(this->triangles == nullptr)
 	{
 		throw "Initialize triangles, points  first";
@@ -94,8 +112,15 @@ void Mesh::CopyToDevice()
 }
 void Mesh::UpdateMeshVertices()
 {
-	worldMatrix.multiplyAllVectors(d_points, d_points_transformed, pointsLength);
-	SaveVerticesToConstantMemory(d_points_transformed, pointsLength);
+	if(onCPU)
+	{
+		worldMatrix.multiplyAllCPUVectors(points, cpu_points_transformed, pointsLength);
+	}
+	else
+	{
+		worldMatrix.multiplyAllVectors(d_points, d_points_transformed, pointsLength);
+		SaveVerticesToConstantMemory(d_points_transformed, pointsLength);
+	}
 }
 
 bool Mesh::IsInitialized() {
@@ -103,6 +128,8 @@ bool Mesh::IsInitialized() {
 }
 
 DeviceMeshData Mesh::GetDeviceMeshData() {
+	if(onCPU)
+		throw "You shouldn't do this on cpu";
 	DeviceMeshData res;
 	res.pointsLength = pointsLength;
 	res.trianglesLength = trianglesLength;

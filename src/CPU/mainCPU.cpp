@@ -1,4 +1,14 @@
 
+/**
+ * Copyright 1993-2012 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ */
+
 // includes, system
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,30 +23,25 @@
 #include <iostream>
 #include <vector>
 #include <strstream>
-#include "DisplayCalculator.h"
-#include "mat4x4.h"
-#include "Mesh.h"
-#include "CPU/mainCPU.h"
+#include "../DisplayCalculator.h"
+#include "../mat4x4.h"
+#include "../Mesh.h"
+#include "mainCPU.h"
 
 // includes CUDA
 #include <cuda_runtime.h>
 #include <helper_timer.h>
 #include <helper_cuda.h>
 #include <helper_math.h>
-#include "defines.h"
+#include "../defines.h"
 
 using namespace std;
 
-namespace GPU
+namespace CPU
 {
 
-	DisplayCalculator displayCalculator;
+	DisplayCalculator displayCalculator(true);
 	char  windowTitle[50];
-	int lastMouseX;
-	int lastMouseY;
-	bool lmbDown = false;
-	GLuint bufferID;
-	GLuint textureID;
 	float angleX = 0;
 	float angleY = 0;
 	float deltaTime = 0.033;
@@ -63,28 +68,14 @@ namespace GPU
 
 		glClearColor(1.0,0.0,1.0,1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
+		glRasterPos2d(-1.0, -1.0);
 		checkGLError();
 		updateWorldMatrix();
 		displayCalculator.mesh.UpdateMeshVertices();
 		displayCalculator.GenerateDisplay();
-		glBindBuffer( GL_PIXEL_UNPACK_BUFFER, bufferID);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-				displayCalculator.mapWidth, displayCalculator.mapHeight,  GL_BGRA,GL_UNSIGNED_BYTE,NULL);
+		glDrawPixels(displayCalculator.mapWidth, displayCalculator.mapHeight,
+				GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, displayCalculator.colorMap);
 		checkGLError();
-		glBegin(GL_QUADS);
-			glTexCoord2f(0,1.0f);
-			glVertex3f(0,0,0);
-
-			glTexCoord2f(0,0);
-			glVertex3f(0,1.0f,0);
-
-			glTexCoord2f(1.0f,0);
-			glVertex3f(1.0f,1.0f,0);
-
-			glTexCoord2f(1.0f,1.0f);
-			glVertex3f(1.0f,0,0);
-		glEnd();
 		glFlush();
 		glutSwapBuffers();
 
@@ -98,51 +89,16 @@ namespace GPU
 	void Reshape(int width, int height)
 	{
 		glViewport(0,0,width, height);
-
-		glMatrixMode( GL_PROJECTION );
-
-		glLoadIdentity();
-		gluOrtho2D(0,1,0,1);
-		cudaGLUnmapBufferObject(bufferID);
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, bufferID);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, width*height*4,NULL,GL_DYNAMIC_COPY);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D,0, GL_RGBA8,width, height, 0, GL_BGRA,GL_UNSIGNED_BYTE,NULL);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 		displayCalculator.mapWidth = width;
 		displayCalculator.mapHeight = height;
+		if(displayCalculator.colorMap != nullptr)
+		{
+			delete[] displayCalculator.colorMap;
+		}
+		displayCalculator.colorMap = new int[width*height];
 		displayCalculator.SetCameraFieldOfView(5.0f*width/height, 5.0f);
 		printf("Width = %d, height = %d\n", width, height);
-		cudaGLMapBufferObject((void **)&displayCalculator.colorMap,bufferID);
 		glutPostRedisplay();
-
-	}
-	void MouseMotion(int x, int y)
-	{
-		lastMouseX = x;
-		lastMouseY = y;
-
-	}
-
-	void bindTexture(int width, int height)
-	{
-		//alocate gl buffer
-		glGenBuffers(1, &bufferID);
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, bufferID);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, width*height*4,NULL,GL_DYNAMIC_COPY);
-		cudaGLRegisterBufferObject(bufferID);
-		//allocate gl texture
-		glEnable(GL_TEXTURE_2D);
-		glGenTextures(1,&textureID);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D,0, GL_RGBA8,width, height, 0, GL_BGRA,GL_UNSIGNED_BYTE,NULL);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-		displayCalculator.mapWidth = width;
-		displayCalculator.mapHeight = height;
-		cudaGLMapBufferObject((void **)&displayCalculator.colorMap,bufferID);
-		getLastCudaError("Failed to bind texture");
 
 	}
 
@@ -212,19 +168,18 @@ namespace GPU
 
 	void CreateMesh(int argc, char **argv)
 	{
-		if(argc != 2)
+		if(argc != 3)
 		{
 			CreateDefaultMesh();
 		}
 		else
 		{
-			if(!LoadMeshFromFile(argv[1]))
+			if(!LoadMeshFromFile(argv[2]))
 			{
 				CreateDefaultMesh();
 			}
 		}
 		printf("triangles=%d, vertices=%d\n", displayCalculator.mesh.trianglesLength, displayCalculator.mesh.pointsLength);
-		displayCalculator.mesh.CopyToDevice();
 
 		displayCalculator.SetCameraPosition(make_float3(0.0f, 0.0f, -5.0f));
 		displayCalculator.SetCameraFieldOfView(5.0f, 5.0f);
@@ -239,24 +194,15 @@ namespace GPU
 		glewInit();
 		glutDisplayFunc(Display);
 		glutReshapeFunc(Reshape);
-		glutPassiveMotionFunc(MouseMotion);
-		bindTexture(600,600);
 		CreateMesh(argc, argv);
 		glutMainLoop();
 	}
 
-}
 
+	int mainCPU(int argc, char **argv)
+	{
+		StartGL(argc, argv);
+		return 0;
+	}
 
-int main(int argc, char **argv)
-{
-	if(argc > 1 && 0 == strcmp(argv[1], "CPU"))
-	{
-		CPU::mainCPU(argc, argv);
-	}
-	else
-	{
-		GPU::StartGL(argc, argv);
-	}
-	return 0;
 }

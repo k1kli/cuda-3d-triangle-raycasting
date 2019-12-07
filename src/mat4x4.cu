@@ -51,6 +51,16 @@ void mat4x4::multiplyAllVectors(float3 * d_vectors_in, float3 * d_vectors_out, i
 	getLastCudaError("multiplyAllVectors kernel execution failed");
 }
 
+
+void mat4x4::multiplyAllCPUVectors(float3 * vectors_in, float3 * vectors_out, int size)
+{
+	for(int i = 0; i < size; i++)
+	{
+		float4 mulVector = make_float4(vectors_in[i], 1.0f);
+		vectors_out[i] = make_float3((*this)*mulVector);
+	}
+}
+
 //https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 mat4x4 mat4x4::getInverse()  const{
 	float * m = vals();
