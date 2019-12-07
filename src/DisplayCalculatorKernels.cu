@@ -51,7 +51,7 @@ void SaveVerticesToConstantMemory(float3 * d_vertices, int length)
 }
 
 __device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
-		DeviceMeshData * p_mesh);
+		DeviceMeshData * p_mesh, short * reachableTriangles);
 
 
 __device__ bool RayIntersectsWith(float3 &  rayStartingPoint,
@@ -74,41 +74,65 @@ __global__ void CastRaysOrthogonal(
 
 	const unsigned int mapIndexX = blockX*blockDim.x+threadX;
 	const unsigned int mapIndexY = blockY*blockDim.y+threadY;
+	extern __shared__ short reachableTriangles[];
+	{
+		float3 blockStart = cameraBottomLeftCorner + xOffset*blockX*blockDim.x + yOffset*blockY*blockDim.y;
+		float3 blockEnd = blockStart + xOffset*blockDim.x + yOffset*blockDim.y;
+		float blockMinX = blockStart.x;
+		float blockMinY = blockStart.y;
+		float blockMaxX =  blockEnd.x;
+		float blockMaxY = blockEnd.y;
+		for(int i = 0; i < mesh.trianglesLength/3; i+=blockDim.x*blockDim.y)
+		{
+			int triangleId = (i+threadX+blockDim.x*threadY)*3;
+			if(triangleId < mesh.trianglesLength)
+			{
+				float3 p1 = c_vertices[c_triangles[triangleId]];
+				float3 p2 = c_vertices[c_triangles[triangleId+1]];
+				float3 p3 = c_vertices[c_triangles[triangleId+2]];
+				float minX = MIN(p1.x, MIN(p2.x,p3.x));
+				float maxX = MAX(p1.x, MAX(p2.x,p3.x));
+				float minY = MIN(p1.y, MIN(p2.y,p3.y));
+				float maxY = MAX(p1.y, MAX(p2.y,p3.y));
+				if(!(minX <= blockMaxX && minY <= blockMaxY && maxX >= blockMinX && maxY >= blockMinY))
+				{
+					reachableTriangles[triangleId] = -1;
+				}
+			}
+		}
+		__syncthreads();
+
+	}
 	if(mapIndexX < width && mapIndexY < height)
 	{
 		const unsigned int mapIndex = mapIndexY*width+mapIndexX;
 		float3 rayStartingPoint = cameraBottomLeftCorner
 				+xOffset*mapIndexX
 				+yOffset*mapIndexY;
-		colorMap[mapIndex] = GetColorOfClosestHitpoint(rayStartingPoint, &mesh);
+		colorMap[mapIndex] = GetColorOfClosestHitpoint(rayStartingPoint, &mesh, reachableTriangles);
 
 	}
 }
 //based on http://geomalgorithms.com/a06-_intersect-2.html#intersect3D_RayTriangle()
 __device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
-		DeviceMeshData * p_mesh)
+		DeviceMeshData * p_mesh, short * reachableTriangles)
 {
-	int idOfClosest;
 	float closestDistance = INFINITY;
 	float3 closestHitPointNormal;
 	for(int triangleId = 0; triangleId < p_mesh->trianglesLength; triangleId+=3)
 	{
+		if(reachableTriangles[triangleId] == -1)
+			continue;
 		float3 p1 = c_vertices[c_triangles[triangleId]];
 		float3 p2 = c_vertices[c_triangles[triangleId+1]];
 		float3 p3 = c_vertices[c_triangles[triangleId+2]];
-		float minX = MIN(p1.x, MIN(p2.x,p3.x));
-		float maxX = MAX(p1.x, MAX(p2.x,p3.x));
-		float minY = MIN(p1.y, MIN(p2.y,p3.y));
-		float maxY = MAX(p1.y, MAX(p2.y,p3.y));
-		if(rayStartingPoint.x >= minX && rayStartingPoint.y >= minY && rayStartingPoint.x <= maxX && rayStartingPoint.y <= maxY
-				&& RayIntersectsWith(rayStartingPoint,p1, p2, p3))
+		if(RayIntersectsWith(rayStartingPoint,p1, p2, p3))
 		{
 			float3 hitPointNormal = normalize(cross(p2-p1, p3-p1));
 			float distance = dot(p1-rayStartingPoint, hitPointNormal)/hitPointNormal.z;
 			if(closestDistance > distance)
 			{
 				closestDistance = distance;
-				idOfClosest = triangleId;
 				closestHitPointNormal = hitPointNormal;
 			}
 		}
@@ -156,8 +180,9 @@ inline __device__ bool RayIntersectsWith(float3 & rayStartingPoint,
 	float e = rayStartingPoint.x-v3.x;
 	float f = rayStartingPoint.y-v3.y;
 	float det = a*b+c*d;
-	float s = (a*e+c*f)/det;
+	int detSign = det > 0 ? 1 : -1;
+	float s = (a*e+c*f) * detSign;
 	if(s < 0) return false;
-	float t = (-d*e+b*f)/det;
-	return t>= 0 && s+t <= 1;
+	float t = (-d*e+b*f) * detSign;
+	return t>= 0 && s+t <= det*detSign;
 }

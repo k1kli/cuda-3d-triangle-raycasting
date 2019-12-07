@@ -36,7 +36,7 @@ void DisplayCalculator::GenerateDisplay() {
 	float3 yOffset = upDirection*(fovHeight/mapHeight);
 	dim3 threads(32,32,1);
 	dim3 blocks(DIVROUNDUP(mapWidth, threads.x), DIVROUNDUP(mapHeight, threads.y),1);
-	CastRaysOrthogonal<<<blocks, threads>>>(
+	CastRaysOrthogonal<<<blocks, threads, meshData.trianglesLength*sizeof(short)>>>(
 			cameraBottomLeftCorner,xOffset,yOffset, mapWidth, mapHeight, d_colorMap, meshData);
 
 	getLastCudaError("CastRaysOrthogonal failed");

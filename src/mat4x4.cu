@@ -42,6 +42,7 @@ float4& mat4x4::operator [](int i) {
 
 void mat4x4::multiplyAllVectors(float3 * d_vectors_in, float3 * d_vectors_out, int size)
 {
+	getLastCudaError("before");
 	SetMatrix(*this);
 	getLastCudaError("setting matrix failed");
 	int threads = 256;
