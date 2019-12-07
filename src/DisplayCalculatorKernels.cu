@@ -51,7 +51,7 @@ void SaveVerticesToConstantMemory(float3 * d_vertices, int length)
 }
 
 __device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
-		DeviceMeshData * p_mesh, short * reachableTriangles);
+		DeviceMeshData * p_mesh, bool * reachableTriangles);
 
 
 __device__ bool RayIntersectsWith(float3 &  rayStartingPoint,
@@ -74,7 +74,7 @@ __global__ void CastRaysOrthogonal(
 
 	const unsigned int mapIndexX = blockX*blockDim.x+threadX;
 	const unsigned int mapIndexY = blockY*blockDim.y+threadY;
-	extern __shared__ short reachableTriangles[];
+	extern __shared__ bool reachableTriangles[];
 	{
 		float3 blockStart = cameraBottomLeftCorner + xOffset*blockX*blockDim.x + yOffset*blockY*blockDim.y;
 		float3 blockEnd = blockStart + xOffset*blockDim.x + yOffset*blockDim.y;
@@ -94,14 +94,14 @@ __global__ void CastRaysOrthogonal(
 				float maxX = MAX(p1.x, MAX(p2.x,p3.x));
 				float minY = MIN(p1.y, MIN(p2.y,p3.y));
 				float maxY = MAX(p1.y, MAX(p2.y,p3.y));
+				reachableTriangles[triangleId] = true;
 				if(!(minX <= blockMaxX && minY <= blockMaxY && maxX >= blockMinX && maxY >= blockMinY))
 				{
-					reachableTriangles[triangleId] = -1;
+					reachableTriangles[triangleId] = false;
 				}
 			}
 		}
 		__syncthreads();
-
 	}
 	if(mapIndexX < width && mapIndexY < height)
 	{
@@ -115,13 +115,13 @@ __global__ void CastRaysOrthogonal(
 }
 //based on http://geomalgorithms.com/a06-_intersect-2.html#intersect3D_RayTriangle()
 __device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
-		DeviceMeshData * p_mesh, short * reachableTriangles)
+		DeviceMeshData * p_mesh, bool * reachableTriangles)
 {
 	float closestDistance = INFINITY;
 	float3 closestHitPointNormal;
 	for(int triangleId = 0; triangleId < p_mesh->trianglesLength; triangleId+=3)
 	{
-		if(reachableTriangles[triangleId] == -1)
+		if(!reachableTriangles[triangleId])
 			continue;
 		float3 p1 = c_vertices[c_triangles[triangleId]];
 		float3 p2 = c_vertices[c_triangles[triangleId+1]];
