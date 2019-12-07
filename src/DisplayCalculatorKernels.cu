@@ -10,7 +10,7 @@ __device__ __constant__ float3 c_vertices[4096];//48kb
 __device__ __constant__ short c_triangles[6*1024];//12kb
 __device__ __constant__ float3 lightColor;
 __device__ __constant__ float3 lightPos;
-__device__ __constant__ uint objectColor = 0xFFFFFF;
+__device__ __constant__ uint objectColor = 0xFFFFFFFF;
 __device__ __constant__ float3 zero;
 __device__ __constant__ float3 one;
 __device__ __constant__ float3 toObserver;
@@ -53,9 +53,6 @@ void SaveVerticesToConstantMemory(float3 * d_vertices, int length)
 __device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
 		DeviceMeshData * p_mesh, bool * reachableTriangles);
 
-
-__device__ bool RayIntersectsWith(float3 &  rayStartingPoint,
-		float3 & v1, float3 &  v2, float3 &  v3);
 
 
 __device__ unsigned int CalculateLight(float3 toLight, float3 &  normalVector,
@@ -170,7 +167,7 @@ __device__ unsigned int CalculateLight(float3 toLight, float3 &  normalVector,
 
 }
 
-inline __device__ bool RayIntersectsWith(float3 & rayStartingPoint,
+__device__ __host__ bool RayIntersectsWith(float3 & rayStartingPoint,
 		float3 &  v1, float3 &  v2, float3 &  v3)
 {
 	float a = v2.y-v3.y;

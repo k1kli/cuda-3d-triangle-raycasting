@@ -26,6 +26,7 @@ public:
 	float * vals() const;
 	float4 getColumn(int i) const;
 	void multiplyAllVectors(float3 * d_vectors_in, float3 * d_vectors_out, int size);
+	void multiplyAllCPUVectors(float3 * vectors_in, float3 * vectors_out, int size);
 
 
 	friend float4 operator*(const mat4x4 & matrix, const float4 & vector);

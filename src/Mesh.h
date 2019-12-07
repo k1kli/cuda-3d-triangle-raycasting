@@ -16,16 +16,18 @@ struct DeviceMeshData
 	int trianglesLength;
 };
 class Mesh {
-	float3 * points;
-	short * triangles;
+	float3 * points = nullptr;
+	float3 * cpu_points_transformed = nullptr;
+	short * triangles = nullptr;
 	bool initialized = false;
-	float3 * d_points;
-	float3 * d_points_transformed;
+	float3 * d_points = nullptr;
+	float3 * d_points_transformed = nullptr;
 	mat4x4 worldMatrix;
+	bool onCPU;
 public:
 	int pointsLength = 0;
 	int trianglesLength = 0;
-	Mesh();
+	Mesh(bool onCPU = false);
 	virtual ~Mesh();
 	void SetPoints(float3 * points, int length);
 	void SetTriangles(int * triangles, int length);

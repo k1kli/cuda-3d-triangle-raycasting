@@ -17,5 +17,7 @@ __global__ void CastRaysOrthogonal(
 		int width, int height,
 		int * colorMap, DeviceMeshData mesh);
 
+__device__ __host__ bool RayIntersectsWith(float3 &  rayStartingPoint,
+		float3 & v1, float3 &  v2, float3 &  v3);
 
 #endif /* DISPLAYCALCULATORKERNELS_H_ */

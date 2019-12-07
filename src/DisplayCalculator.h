@@ -13,16 +13,20 @@
 class DisplayCalculator {
 	float fovWidth;
 	float fovHeight;
+	bool onCPU;
+	void GenerateDisplayCPU();
+	unsigned int GetColorOfClosestHitpointCPU(float3 & rayStartingPoint);
+	unsigned int CalculateLightCPU(float3 toLight, float3 &  normalVector,
+			float diffuseFactor, float specularFactor, int m);
 public:
 	float3 cameraPosition;
-	int * d_colorMap;
+	int * colorMap = nullptr;
 	Mesh mesh;
 	int mapWidth;
 	int mapHeight;
-	DisplayCalculator();
+	DisplayCalculator(bool onCPU = false);
 	virtual ~DisplayCalculator();
 	void GenerateDisplay();
-	void GenerateDisplayPerspective();
 	void SetCameraPosition(float3 position);
 	void SetCameraFieldOfView(float width, float height);
 };

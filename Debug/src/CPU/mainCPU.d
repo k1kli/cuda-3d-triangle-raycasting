@@ -1,4 +1,4 @@
-src/main.o : ../src/main.cpp \
+src/CPU/mainCPU.o : ../src/CPU/mainCPU.cpp \
     /usr/include/stdc-predef.h \
     /usr/include/c++/7/stdlib.h \
     /usr/include/c++/7/cstdlib \
@@ -213,9 +213,9 @@ src/main.o : ../src/main.cpp \
     /usr/include/c++/7/bits/vector.tcc \
     /usr/include/c++/7/backward/strstream \
     /usr/include/c++/7/backward/backward_warning.h \
-    ../src/DisplayCalculator.h \
-    ../src/Mesh.h \
-    ../src/mat4x4.h \
+    ../src/CPU/../DisplayCalculator.h \
+    ../src/CPU/../Mesh.h \
+    ../src/CPU/../mat4x4.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/cuda_runtime.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/crt/host_config.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/library_types.h \
@@ -233,4 +233,4 @@ src/main.o : ../src/main.cpp \
     /usr/include/c++/7/ctime \
     ../include/cudaInclude/helper_cuda.h \
     ../include/cudaInclude/helper_string.h \
-    ../src/defines.h
+    ../src/CPU/../defines.h
