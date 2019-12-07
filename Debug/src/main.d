@@ -215,6 +215,7 @@ src/main.o : ../src/main.cpp \
     /usr/include/c++/7/backward/backward_warning.h \
     ../src/DisplayCalculator.h \
     ../src/Mesh.h \
+    ../src/mat4x4.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/cuda_runtime.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/crt/host_config.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/library_types.h \
@@ -222,6 +223,7 @@ src/main.o : ../src/main.cpp \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/driver_functions.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/vector_functions.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/vector_functions.hpp \
+    ../include/cudaInclude/helper_math.h \
     ../include/cudaInclude/helper_timer.h \
     ../include/cudaInclude/exception.h \
     /usr/include/c++/7/sstream \
@@ -230,5 +232,4 @@ src/main.o : ../src/main.cpp \
     /usr/include/c++/7/ctime \
     ../include/cudaInclude/helper_cuda.h \
     ../include/cudaInclude/helper_string.h \
-    ../include/cudaInclude/helper_math.h \
     ../src/defines.h

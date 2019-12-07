@@ -15,8 +15,6 @@ class DisplayCalculator {
 	float fovHeight;
 public:
 	float3 cameraPosition;
-	float3 lookAt;
-	float3 cameraUpDirection;
 	int * d_colorMap;
 	Mesh mesh;
 	int mapWidth;
@@ -26,7 +24,6 @@ public:
 	void GenerateDisplay();
 	void GenerateDisplayPerspective();
 	void SetCameraPosition(float3 position);
-	void SetCameraLookAt(float3 lookAt, float3 upDirection);
 	void SetCameraFieldOfView(float width, float height);
 };
 

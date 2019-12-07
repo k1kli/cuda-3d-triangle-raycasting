@@ -1,4 +1,4 @@
-src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
+src/mat4x4.o : ../src/mat4x4.cu \
     /usr/include/stdc-predef.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/cuda_runtime.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/crt/host_config.h \
@@ -148,8 +148,6 @@ src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/texture_indirect_functions.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/surface_indirect_functions.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/device_launch_parameters.h \
-    ../src/DisplayCalculator.h \
-    ../src/Mesh.h \
     ../src/mat4x4.h \
     ../include/cudaInclude/helper_math.h \
     /usr/include/c++/7/iostream \
@@ -241,7 +239,6 @@ src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
     /usr/include/c++/7/bits/ostream.tcc \
     /usr/include/c++/7/istream \
     /usr/include/c++/7/bits/istream.tcc \
-    ../src/defines.h \
     ../include/cudaInclude/helper_cuda.h \
     ../include/cudaInclude/helper_string.h \
     /usr/include/c++/7/fstream \
@@ -249,4 +246,6 @@ src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
     /usr/include/x86_64-linux-gnu/c++/7/bits/basic_file.h \
     /usr/include/x86_64-linux-gnu/c++/7/bits/c++io.h \
     /usr/include/c++/7/bits/fstream.tcc \
-    ../src/DisplayCalculatorKernels.h
+    ../src/defines.h \
+    ../src/mat4x4Kernels.h \
+    /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/cuda.h

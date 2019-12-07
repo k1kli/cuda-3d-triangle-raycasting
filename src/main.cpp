@@ -14,6 +14,8 @@
 #include <vector>
 #include <strstream>
 #include "DisplayCalculator.h"
+#include "mat4x4.h"
+#include "Mesh.h"
 
 // includes CUDA
 #include <cuda_runtime.h>
@@ -31,8 +33,9 @@ int lastMouseY;
 bool lmbDown = false;
 GLuint bufferID;
 GLuint textureID;
-float angleY = 0;
 float angleX = 0;
+float angleY = 0;
+float deltaTime = 0.033;
 
 void checkGLError()
 {
@@ -41,49 +44,11 @@ void checkGLError()
         std::cout << err;
     }
 }
-
-float3 rotationXRows[] = {
-		make_float3(1,0,0),
-		make_float3(0,1,0),
-		make_float3(0,0,1)
-};
-float3 rotationYRows[] = {
-		make_float3(1,0,0),
-		make_float3(0,1,0),
-		make_float3(0,0,1)
-};
-
-void UpdateRotationMatrices()
+void updateWorldMatrix()
 {
-	float sX = sin(angleX);
-	float sY = sin(angleY);
-	float cX = cos(angleX);
-	float cY = cos(angleY);
-	rotationXRows[1] = make_float3(0, cX, -sX);
-	rotationXRows[2] = make_float3(0, sX,  cX);
-
-	rotationYRows[0] = make_float3(cY, 0, sY);
-	rotationYRows[2] = make_float3(-sY, 0, cY);
-}
-float3 multiplyPoint3x3(float3 point, float3 matrix3x3Rows[3])
-{
-	return make_float3(dot(point, matrix3x3Rows[0]),dot(point, matrix3x3Rows[1]),dot(point, matrix3x3Rows[2]));
-}
-
-void UpdateCameraPosition()
-{
-	angleY += 0.02f*PI*(lastMouseX-displayCalculator.mapWidth/2)/displayCalculator.mapWidth;
-	angleX += 0.02f*PI*(lastMouseY-displayCalculator.mapHeight/2)/displayCalculator.mapHeight;
-	UpdateRotationMatrices();
-	float distance = 10;
-	float3 camera = make_float3(0,0, -distance);
-	float3 cameraPlusUp = camera+make_float3(0,1.f,-distance);
-	camera = multiplyPoint3x3(camera, rotationXRows);
-	camera = multiplyPoint3x3(camera, rotationYRows);
-	cameraPlusUp = multiplyPoint3x3(cameraPlusUp, rotationXRows);
-	cameraPlusUp = multiplyPoint3x3(cameraPlusUp, rotationYRows);
-	displayCalculator.SetCameraPosition(camera);
-	displayCalculator.SetCameraLookAt(displayCalculator.lookAt,cameraPlusUp);
+	angleX += 0.5f*deltaTime;
+	angleY += 0.7f*deltaTime;
+	displayCalculator.mesh.SetWorldMatrix(getRotationMatrix(angleX, angleY, 0));
 }
 
 void Display()
@@ -95,8 +60,9 @@ void Display()
 	glClearColor(1.0,0.0,1.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	checkGLError();
-	UpdateCameraPosition();
-	displayCalculator.GenerateDisplayPerspective();
+	updateWorldMatrix();
+	displayCalculator.mesh.UpdateMeshVertices();
+	displayCalculator.GenerateDisplay();
 //	int k = cudaGLUnmapBufferObject(bufferID);
 	glBindBuffer( GL_PIXEL_UNPACK_BUFFER, bufferID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
@@ -120,7 +86,8 @@ void Display()
 	glutSwapBuffers();
 
     sdkStopTimer(&timer);
-    snprintf(windowTitle, 50, "Raycasting Triangles - %f FPS", 1000.0/sdkGetTimerValue(&timer));
+    deltaTime = sdkGetTimerValue(&timer)/1000.0;
+    snprintf(windowTitle, 50, "Raycasting Triangles - %f FPS", 1.0/deltaTime);
     glutSetWindowTitle(windowTitle);
     sdkDeleteTimer(&timer);
 	glutPostRedisplay();
@@ -259,9 +226,8 @@ void CreateMesh(int argc, char **argv)
 	printf("triangles=%d, vertices=%d\n", displayCalculator.mesh.trianglesLength, displayCalculator.mesh.pointsLength);
 	displayCalculator.mesh.CopyToDevice();
 
-	UpdateCameraPosition();
-	displayCalculator.SetCameraLookAt(make_float3(0.0f, 0.0f, 0.0f),make_float3(0,1.f,0));
-	displayCalculator.SetCameraFieldOfView(50.0f, 50.0f);
+	displayCalculator.SetCameraPosition(make_float3(0.0f, 0.0f, -5.0f));
+	displayCalculator.SetCameraFieldOfView(5.0f, 5.0f);
 }
 
 void StartGL(int argc, char **argv)
