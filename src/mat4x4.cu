@@ -40,7 +40,7 @@ float4& mat4x4::operator [](int i) {
 	return rows[i];
 }
 
-void mat4x4::multiplyAllVectors(float3 * d_vectors_in, float3 * d_vectors_out, int size)
+void mat4x4::multiplyAllVectors(float3 * d_vectors_in, float4 * d_vectors_out, int size)
 {
 	SetMatrix(*this);
 	getLastCudaError("setting matrix failed");

@@ -14,14 +14,17 @@ struct DeviceMeshData
 {
 	int pointsLength;
 	int trianglesLength;
+	float4 * d_points;
+	int * d_triangles;
 };
 class Mesh {
 	float3 * points = nullptr;
 	float3 * cpu_points_transformed = nullptr;
-	short * triangles = nullptr;
+	int * triangles = nullptr;
 	bool initialized = false;
 	float3 * d_points = nullptr;
-	float3 * d_points_transformed = nullptr;
+	float4 * d_points_transformed = nullptr;
+	int * d_triangles = nullptr;
 	mat4x4 worldMatrix;
 	bool onCPU;
 public:

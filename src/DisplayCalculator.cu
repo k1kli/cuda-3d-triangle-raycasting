@@ -42,11 +42,11 @@ void DisplayCalculator::GenerateDisplay() {
 	float3 yOffset = upDirection*(fovHeight/mapHeight);
 	dim3 threads(32,32,1);
 	dim3 blocks(DIVROUNDUP(mapWidth, threads.x), DIVROUNDUP(mapHeight, threads.y),1);
-	CastRaysOrthogonal<<<blocks, threads, meshData.trianglesLength*sizeof(bool)>>>(
+	CastRaysOrthogonal<<<blocks, threads, threads.x*threads.y*3*sizeof(float4)>>>(
 			cameraBottomLeftCorner,xOffset,yOffset, mapWidth, mapHeight, colorMap, meshData);
 
-	getLastCudaError("CastRaysOrthogonal failed");
 	cudaDeviceSynchronize();
+	getLastCudaError("CastRaysOrthogonal failed");
 }
 
 void DisplayCalculator::GenerateDisplayCPU() {

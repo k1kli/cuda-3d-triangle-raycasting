@@ -26,16 +26,17 @@ void SetMatrix(const mat4x4 & h_matrix)
 }
 
 
-__global__ void multiplyAllPointKernel(float3 * vectors_in, float3 * vectors_out, int length)
+__global__ void multiplyAllPointKernel(float3 * vectors_in, float4 * vectors_out, int length)
 {
 	const unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if(index < length)
 	{
 		float4 mulVec = make_float4(vectors_in[index], 1.0f);
-		vectors_out[index] = make_float3(
+		vectors_out[index] = make_float4(
 				dot(c_matrix[0], mulVec),
 				dot(c_matrix[1], mulVec),
-				dot(c_matrix[2], mulVec)
+				dot(c_matrix[2], mulVec),
+				0
 			);
 	}
 }
