@@ -225,6 +225,7 @@ namespace GPU
 		}
 		printf("triangles=%d, vertices=%d\n", displayCalculator.mesh.trianglesLength, displayCalculator.mesh.pointsLength);
 		displayCalculator.mesh.CopyToDevice();
+		getLastCudaError("failed copy to device");
 
 		displayCalculator.SetCameraPosition(make_float3(0.0f, 0.0f, -5.0f));
 		displayCalculator.SetCameraFieldOfView(5.0f, 5.0f);

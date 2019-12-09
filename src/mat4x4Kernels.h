@@ -20,6 +20,6 @@
 void SetMatrix(const mat4x4 & h_matrix);
 
 
-__global__ void multiplyAllPointKernel(float3 * vectors_in, float3 * vectors_out, int length);
+__global__ void multiplyAllPointKernel(float3 * vectors_in, float4 * vectors_out, int length);
 
 #endif /* MAT4X4KERNELS_H_ */

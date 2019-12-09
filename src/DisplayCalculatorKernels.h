@@ -9,8 +9,7 @@
 #define DISPLAYCALCULATORKERNELS_H_
 #include "Mesh.h"
 
-void SaveToConstantMemory(short * h_triangles, int verticesLenght, int trianglesLength);
-void SaveVerticesToConstantMemory(float3 * d_vertices, int length);
+void SaveToConstantMemory();
 
 __global__ void CastRaysOrthogonal(
 		float3 cameraBottomLeftCorner, float3 xOffset, float3 yOffset,

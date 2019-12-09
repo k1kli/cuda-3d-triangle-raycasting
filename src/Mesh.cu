@@ -37,6 +37,10 @@ Mesh::~Mesh() {
 	{
 		cudaFree(d_points_transformed);
 	}
+	if(this->d_triangles != nullptr)
+	{
+		cudaFree(d_triangles);
+	}
 
 }
 void Mesh::SetPoints(float3 points[], int length)
@@ -44,8 +48,12 @@ void Mesh::SetPoints(float3 points[], int length)
 	if(this->points != nullptr)
 	{
 		delete[] this->points;
+		this->points = nullptr;
 		if(onCPU)
+		{
 			delete[] this->cpu_points_transformed;
+			this->cpu_points_transformed = nullptr;
+		}
 	}
 	this->points = new float3[length];
 	if(onCPU)
@@ -70,13 +78,14 @@ void Mesh::SetTriangles(int triangles[], int length)
 	if(this->triangles != nullptr)
 	{
 		delete[] this->triangles;
+		this->triangles = nullptr;
 	}
-	this->triangles = new short[length];
+	this->triangles = new int[length];
 	for(int i = 0; i < length; i++)
 	{
 		if(pointsLength <= triangles[i])
 			throw "Incorrect triangle: points array doesn't have this many numbers";
-		this->triangles[i] = (short)triangles[i];
+		this->triangles[i] = triangles[i];
 	}
 	trianglesLength = length;
 	if(onCPU) initialized = true;
@@ -92,22 +101,35 @@ void Mesh::CopyToDevice()
 	if(this->d_points != nullptr)
 	{
 		cudaFree(d_points);
+		d_points = nullptr;
 	}
 	if(this->d_points_transformed != nullptr)
 	{
 		cudaFree(d_points_transformed);
+		d_points_transformed = nullptr;
+	}
+	if(this->d_triangles != nullptr)
+	{
+		cudaFree(d_triangles);
+		d_triangles = nullptr;
 	}
 	cudaMalloc(&d_points, sizeof(float3)*pointsLength);
 	getLastCudaError("couldn't malloc d_points in mesh");
 
-	cudaMalloc(&d_points_transformed, sizeof(float3)*pointsLength);
+	cudaMalloc(&d_points_transformed, sizeof(float4)*pointsLength);
 	getLastCudaError("couldn't malloc d_points_transformed in mesh");
+
+	cudaMalloc(&d_triangles, sizeof(int)*trianglesLength);
+	getLastCudaError("couldn't malloc d_triangles in mesh");
 
 	cudaMemcpy(d_points, points, sizeof(float3)*pointsLength, cudaMemcpyHostToDevice);
 	getLastCudaError("couldn't memcpy points in mesh");
 
-	SaveToConstantMemory(triangles, pointsLength, trianglesLength);
-	getLastCudaError("Couldn't memcpy data to constant for Mesh");
+	cudaMemcpy(d_triangles, triangles, sizeof(int)*trianglesLength, cudaMemcpyHostToDevice);
+	getLastCudaError("couldn't memcpy triangles in mesh");
+
+	SaveToConstantMemory();
+	getLastCudaError("Couldn't save data to constant for Mesh");
 	initialized = true;
 }
 void Mesh::UpdateMeshVertices()
@@ -119,7 +141,6 @@ void Mesh::UpdateMeshVertices()
 	else
 	{
 		worldMatrix.multiplyAllVectors(d_points, d_points_transformed, pointsLength);
-		SaveVerticesToConstantMemory(d_points_transformed, pointsLength);
 	}
 }
 
@@ -133,6 +154,8 @@ DeviceMeshData Mesh::GetDeviceMeshData() {
 	DeviceMeshData res;
 	res.pointsLength = pointsLength;
 	res.trianglesLength = trianglesLength;
+	res.d_points = d_points_transformed;
+	res.d_triangles = d_triangles;
 
 	return res;
 }

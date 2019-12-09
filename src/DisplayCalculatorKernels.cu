@@ -6,8 +6,6 @@
 #include "defines.h"
 
 
-__device__ __constant__ float3 c_vertices[4096];//48kb
-__device__ __constant__ short c_triangles[6*1024];//12kb
 __device__ __constant__ float3 lightColor;
 __device__ __constant__ float3 lightPos;
 __device__ __constant__ uint objectColor = 0xFFFFFFFF;
@@ -16,22 +14,18 @@ __device__ __constant__ float3 one;
 __device__ __constant__ float3 toObserver;
 __device__ __constant__ float3 ray;
 
-void SaveToConstantMemory(short * h_triangles, int verticesLenght, int trianglesLength)
+void InitConstantMemory()
 {
 
-	cudaMemcpyToSymbol(c_triangles, h_triangles, sizeof(short)*trianglesLength,0,cudaMemcpyHostToDevice);
+}
+
+void SaveToConstantMemory()
+{
+
 
 	float3 h_lightColor = make_float3(1.0f,1.0f,1.0f);
 
 	cudaMemcpyToSymbol(lightColor, &h_lightColor, sizeof(float3),0,cudaMemcpyHostToDevice);
-
-	float3 h_zero = make_float3(0.0f,0.0f,0.0f);
-
-	cudaMemcpyToSymbol(zero, &h_zero, sizeof(float3),0,cudaMemcpyHostToDevice);
-
-	float3 h_one = make_float3(1.0f,1.0f,1.0f);
-
-	cudaMemcpyToSymbol(one, &h_one, sizeof(float3),0,cudaMemcpyHostToDevice);
 
 	float3 h_lightPos = make_float3(-2.0f,3.0f,-2.0f);
 
@@ -45,13 +39,10 @@ void SaveToConstantMemory(short * h_triangles, int verticesLenght, int triangles
 
 	cudaMemcpyToSymbol(ray, &h_ray, sizeof(float3),0,cudaMemcpyHostToDevice);
 }
-void SaveVerticesToConstantMemory(float3 * d_vertices, int length)
-{
-	cudaMemcpyToSymbol(c_vertices, d_vertices, sizeof(float3)*length,0,cudaMemcpyDeviceToDevice);
-}
 
-__device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
-		DeviceMeshData * p_mesh, bool * reachableTriangles);
+__device__ float GetDistanceToClosestHitpointInBatch(float3 &  rayStartingPoint,
+		DeviceMeshData * p_mesh, float4 * reachableTriangles, int reachableTrianglesSize,
+		float3 * closestHitPointNormal);
 
 
 
@@ -71,58 +62,85 @@ __global__ void CastRaysOrthogonal(
 
 	const unsigned int mapIndexX = blockX*blockDim.x+threadX;
 	const unsigned int mapIndexY = blockY*blockDim.y+threadY;
-	extern __shared__ bool reachableTriangles[];
+	const unsigned int mapIndex = mapIndexY*width+mapIndexX;
+	float3 rayStartingPoint = cameraBottomLeftCorner
+			+xOffset*mapIndexX
+			+yOffset*mapIndexY;
+	int reachableTrianglesSize = blockDim.x*blockDim.y*3;
+
+	float closestDistance = INFINITY;
+	float3 closestHitPointNormal;
+	extern __shared__ float4 reachableTriangles[];
 	{
-		float3 blockStart = cameraBottomLeftCorner + xOffset*blockX*blockDim.x + yOffset*blockY*blockDim.y;
-		float3 blockEnd = blockStart + xOffset*blockDim.x + yOffset*blockDim.y;
-		float blockMinX = blockStart.x;
-		float blockMinY = blockStart.y;
-		float blockMaxX =  blockEnd.x;
-		float blockMaxY = blockEnd.y;
+		float2 blockStart = make_float2(cameraBottomLeftCorner + xOffset*blockX*blockDim.x + yOffset*blockY*blockDim.y);
+		float2 blockEnd = make_float2(make_float3(blockStart,0) + xOffset*blockDim.x + yOffset*blockDim.y);
 		for(int i = 0; i < mesh.trianglesLength/3; i+=blockDim.x*blockDim.y)
 		{
-			int triangleId = (i+threadX+blockDim.x*threadY)*3;
+			int inBatchTriangleId = (threadX+blockDim.x*threadY)*3;
+			int triangleId = i*3+inBatchTriangleId;
 			if(triangleId < mesh.trianglesLength)
 			{
-				float3 p1 = c_vertices[c_triangles[triangleId]];
-				float3 p2 = c_vertices[c_triangles[triangleId+1]];
-				float3 p3 = c_vertices[c_triangles[triangleId+2]];
-				float minX = MIN(p1.x, MIN(p2.x,p3.x));
-				float maxX = MAX(p1.x, MAX(p2.x,p3.x));
-				float minY = MIN(p1.y, MIN(p2.y,p3.y));
-				float maxY = MAX(p1.y, MAX(p2.y,p3.y));
-				reachableTriangles[triangleId] = true;
-				if(!(minX <= blockMaxX && minY <= blockMaxY && maxX >= blockMinX && maxY >= blockMinY))
+				reachableTriangles[inBatchTriangleId] = mesh.d_points[mesh.d_triangles[triangleId]];
+				reachableTriangles[inBatchTriangleId+1] = mesh.d_points[mesh.d_triangles[triangleId+1]];
+				reachableTriangles[inBatchTriangleId+2] = mesh.d_points[mesh.d_triangles[triangleId+2]];
+				float minX = MIN(reachableTriangles[inBatchTriangleId].x, MIN(reachableTriangles[inBatchTriangleId+1].x,reachableTriangles[inBatchTriangleId+2].x));
+				float maxX = MAX(reachableTriangles[inBatchTriangleId].x, MAX(reachableTriangles[inBatchTriangleId+1].x,reachableTriangles[inBatchTriangleId+2].x));
+				float minY = MIN(reachableTriangles[inBatchTriangleId].y, MIN(reachableTriangles[inBatchTriangleId+1].y,reachableTriangles[inBatchTriangleId+2].y));
+				float maxY = MAX(reachableTriangles[inBatchTriangleId].y, MAX(reachableTriangles[inBatchTriangleId+1].y,reachableTriangles[inBatchTriangleId+2].y));
+				if(!(minX <= blockEnd.x && minY <= blockEnd.y && maxX >= blockStart.x && maxY >= blockStart.y))
 				{
-					reachableTriangles[triangleId] = false;
+					reachableTriangles[inBatchTriangleId] = make_float4(INFINITY,0,0, 0);
 				}
 			}
+			__syncthreads();
+			if(mapIndexX < width && mapIndexY < height)
+			{
+				float3 hitPointNormal;
+				float distance =  GetDistanceToClosestHitpointInBatch(rayStartingPoint,
+						&mesh, reachableTriangles, MIN(reachableTrianglesSize, mesh.trianglesLength-i*3),
+						&hitPointNormal);
+				if(distance < closestDistance)
+				{
+					closestDistance = distance;
+					closestHitPointNormal = hitPointNormal;
+				}
+			}
+			__syncthreads();
 		}
-		__syncthreads();
 	}
 	if(mapIndexX < width && mapIndexY < height)
 	{
-		const unsigned int mapIndex = mapIndexY*width+mapIndexX;
-		float3 rayStartingPoint = cameraBottomLeftCorner
-				+xOffset*mapIndexX
-				+yOffset*mapIndexY;
-		colorMap[mapIndex] = GetColorOfClosestHitpoint(rayStartingPoint, &mesh, reachableTriangles);
+		if(closestDistance == INFINITY)
+		{
+			colorMap[mapIndex] = 0xFF5555FF;
+		}
+		else
+		{
 
+			float3 hitPoint = make_float3(rayStartingPoint.x, rayStartingPoint.y, rayStartingPoint.z+closestDistance);
+
+
+			float3 toLight = normalize(lightPos - hitPoint);
+			unsigned int color = CalculateLight(toLight, closestHitPointNormal, 0.7f, 0.3f, 30);
+			colorMap[mapIndex] = color;
+
+		}
 	}
+
 }
 //based on http://geomalgorithms.com/a06-_intersect-2.html#intersect3D_RayTriangle()
-__device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
-		DeviceMeshData * p_mesh, bool * reachableTriangles)
+__device__ float GetDistanceToClosestHitpointInBatch(float3 &  rayStartingPoint,
+		DeviceMeshData * p_mesh, float4 * reachableTriangles, int reachableTrianglesSize,
+		float3 * closestHitPointNormal)
 {
 	float closestDistance = INFINITY;
-	float3 closestHitPointNormal;
-	for(int triangleId = 0; triangleId < p_mesh->trianglesLength; triangleId+=3)
+	for(int triangleId = 0; triangleId < reachableTrianglesSize; triangleId+=3)
 	{
-		if(!reachableTriangles[triangleId])
+		if(reachableTriangles[triangleId].x == INFINITY)
 			continue;
-		float3 p1 = c_vertices[c_triangles[triangleId]];
-		float3 p2 = c_vertices[c_triangles[triangleId+1]];
-		float3 p3 = c_vertices[c_triangles[triangleId+2]];
+		float3 p1 = *((float3 *)&reachableTriangles[triangleId]);
+		float3 p2 = *((float3 *)&reachableTriangles[triangleId+1]);
+		float3 p3 = *((float3 *)&reachableTriangles[triangleId+2]);
 		if(RayIntersectsWith(rayStartingPoint,p1, p2, p3))
 		{
 			float3 hitPointNormal = normalize(cross(p2-p1, p3-p1));
@@ -130,25 +148,12 @@ __device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
 			if(closestDistance > distance)
 			{
 				closestDistance = distance;
-				closestHitPointNormal = hitPointNormal;
+				*closestHitPointNormal = hitPointNormal;
 			}
 		}
 	}
-	if(closestDistance == INFINITY)
-	{
-		return 0xFF5555FF;
-	}
-	else
-	{
+	return closestDistance;
 
-		float3 hitPoint = make_float3(rayStartingPoint.x, rayStartingPoint.y, rayStartingPoint.z+closestDistance);
-
-
-		float3 toLight = normalize(lightPos - hitPoint);
-		unsigned int color = CalculateLight(toLight, closestHitPointNormal, 0.7f, 0.3f, 30);
-		return color;
-
-	}
 }
 __device__ unsigned int CalculateLight(float3 toLight, float3 &  normalVector,
 		float diffuseFactor, float specularFactor, int m)
