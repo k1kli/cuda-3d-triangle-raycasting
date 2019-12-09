@@ -5,6 +5,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 OBJ_SRCS += \
 ../objects/cube.obj \
+../objects/monkey.obj \
 ../objects/sphere.obj 
 
 

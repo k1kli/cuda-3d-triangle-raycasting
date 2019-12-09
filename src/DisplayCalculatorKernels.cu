@@ -145,7 +145,7 @@ __device__ unsigned int GetColorOfClosestHitpoint(float3 &  rayStartingPoint,
 
 
 		float3 toLight = normalize(lightPos - hitPoint);
-		unsigned int color = CalculateLight(toLight, closestHitPointNormal, 0.3f, 0.7f, 80);
+		unsigned int color = CalculateLight(toLight, closestHitPointNormal, 0.7f, 0.3f, 30);
 		return color;
 
 	}
