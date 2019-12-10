@@ -17,8 +17,7 @@ class DisplayCalculator {
 	bool onCPU;
 	void GenerateDisplayCPU();
 	unsigned int GetColorOfClosestHitpointCPU(float3 & rayStartingPoint);
-	unsigned int CalculateLightCPU(float3 toLight, float3 &  normalVector,
-			float diffuseFactor, float specularFactor, int m);
+	unsigned int CalculateLightCPU(float3 & hitPoint, float3 &  normalVector);
 public:
 	float3 cameraPosition;
 	int * colorMap = nullptr;

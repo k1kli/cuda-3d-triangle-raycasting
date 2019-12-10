@@ -190,13 +190,17 @@ namespace CPU
 	}
 	void SetScene()
 	{
-		displayCalculator.sceneData.lights.push_back(
-				Light(make_float3(1.0f, 0.0f, 0.0f), make_float3(-2.0f, 0.0f, -2.0f))
-		);
-
-		displayCalculator.sceneData.lights.push_back(
-				Light(make_float3(0.0f, 0.0f, 1.0f), make_float3(2.0f, 0.0f, -2.0f))
-		);
+		int lights = 5;
+		for(int i = 0; i < lights; i++ )
+		{
+			float3 color = make_float3(sin(2.0*PI*i/lights), sin(2.0*PI*i/lights), cos(2.0*PI*i/lights));
+			color.x = color.x*color.x;
+			color.y = color.y*color.y;
+			color.z = color.z*color.z;
+			displayCalculator.sceneData.lights.push_back(
+					Light(color, make_float3(cos(2.0*PI*i/lights), sin(2.0*PI*i/lights), -3.0f))
+			);
+		}
 	}
 
 	void StartGL(int argc, char **argv)

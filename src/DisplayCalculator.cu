@@ -106,25 +106,28 @@ unsigned int DisplayCalculator::GetColorOfClosestHitpointCPU(float3 & rayStartin
 
 
 		const float3 lightPos(make_float3(-2.0f,3.0f,-2.0f));
-		float3 toLight = normalize(lightPos - hitPoint);
-		unsigned int color = CalculateLightCPU(toLight, closestHitPointNormal, 0.3f, 0.7f, 80);
+		unsigned int color = CalculateLightCPU(hitPoint, closestHitPointNormal);
 		return color;
 
 	}
 }
-unsigned int DisplayCalculator::CalculateLightCPU(float3 toLight, float3 &  normalVector,
-		float diffuseFactor, float specularFactor, int m)
+unsigned int DisplayCalculator::CalculateLightCPU(float3 & hitPoint, float3 &  normalVector)
 {
 	const float3 toObserver(make_float3(0,0,-1.0f));
-	const float3 lightColor(make_float3(1.0f,1.0f,1.0f));
 	const float3 zero(make_float3(0,0,0));
 	const float3 one(make_float3(1.0f,1.0f,1.0f));
-	const uint objectColor = 0xFFFFFFFF;
-	float3 reflectVector = 2*dot(toLight, normalVector)*normalVector-toLight;
-	float firstDot = dot(toLight,normalVector);
-	float secondDot = dot(reflectVector, toObserver);
-	secondDot = powf(secondDot, m);
-	float3 floatColor = clamp(lightColor*(diffuseFactor*firstDot+specularFactor*secondDot),zero, one);
+	float3 floatColor = zero;
+	for(int i = 0; i < sceneData.lights.size(); i++)
+	{
+		float3 toLight = normalize(sceneData.lights[i].position - hitPoint);
+		float3 reflectVector = 2*dot(toLight, normalVector)*normalVector-toLight;
+		float firstDot = dot(toLight,normalVector);
+		float secondDot = dot(reflectVector, toObserver);
+		secondDot = powf(secondDot, mesh.material.smoothness);
+		floatColor += sceneData.lights[i].color*(mesh.material.diffuse*firstDot+mesh.material.specular*secondDot);
+	}
+	floatColor = clamp(floatColor,zero,one);
+	unsigned int objectColor = mesh.material.color;
 	unsigned int res =
 			255u |
 			((unsigned int)(floatColor.x*((objectColor>>16)&255))<<24) |

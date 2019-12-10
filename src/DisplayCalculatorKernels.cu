@@ -95,6 +95,7 @@ __global__ void CastRaysOrthogonal(
 		{
 			int inBatchTriangleId = (threadX+blockDim.x*threadY)*3;
 			int triangleId = i*3+inBatchTriangleId;
+			int reachable = 0;
 			if(triangleId < mesh.trianglesLength)
 			{
 				reachableTriangles[inBatchTriangleId] = mesh.d_points[mesh.d_triangles[triangleId]];
@@ -104,13 +105,15 @@ __global__ void CastRaysOrthogonal(
 				float maxX = MAX(reachableTriangles[inBatchTriangleId].x, MAX(reachableTriangles[inBatchTriangleId+1].x,reachableTriangles[inBatchTriangleId+2].x));
 				float minY = MIN(reachableTriangles[inBatchTriangleId].y, MIN(reachableTriangles[inBatchTriangleId+1].y,reachableTriangles[inBatchTriangleId+2].y));
 				float maxY = MAX(reachableTriangles[inBatchTriangleId].y, MAX(reachableTriangles[inBatchTriangleId+1].y,reachableTriangles[inBatchTriangleId+2].y));
+				reachable = 1;
 				if(!(minX <= blockEnd.x && minY <= blockEnd.y && maxX >= blockStart.x && maxY >= blockStart.y))
 				{
 					reachableTriangles[inBatchTriangleId] = make_float4(INFINITY,0,0, 0);
+					reachable = 0;
 				}
 			}
-			__syncthreads();
-			if(mapIndexX < width && mapIndexY < height)
+			reachable = __syncthreads_or(reachable);
+			if(reachable && mapIndexX < width && mapIndexY < height)
 			{
 				float3 hitPointNormal;
 				float distance =  GetDistanceToClosestHitpointInBatch(rayStartingPoint,
