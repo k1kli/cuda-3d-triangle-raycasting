@@ -8,14 +8,12 @@
 
 __device__ __constant__ float3 c_lightColors[128];
 __device__ __constant__ float3 c_lightPositions[128];
-//__device__ __constant__ int c_lightCount;
+__device__ __constant__ int c_lightCount;
 __device__ __constant__ uint objectColor = 0xFFFFFFFF;
 __device__ __constant__ float3 zero;
 __device__ __constant__ float3 one;
 __device__ __constant__ float3 toObserver;
 __device__ __constant__ float3 ray;
-
-#define c_lightCount 2
 
 void InitConstantMemory()
 {
@@ -44,7 +42,7 @@ void UpdateLightsGPU(float3 * lightColors, float3 * lightPositions, int lightCou
 
 	cudaMemcpyToSymbol(c_lightColors, lightColors, sizeof(float3)*lightCount,0,cudaMemcpyHostToDevice);
 	cudaMemcpyToSymbol(c_lightPositions, lightPositions, sizeof(float3)*lightCount,0,cudaMemcpyHostToDevice);
-	//cudaMemcpyToSymbol(c_lightCount, &lightCount, sizeof(int),0,cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(c_lightCount, &lightCount, sizeof(int),0,cudaMemcpyHostToDevice);
 }
 
 __device__ float GetDistanceToClosestHitpointInBatch(float3 &  rayStartingPoint,

@@ -226,6 +226,7 @@ src/main.o : ../src/main.cpp \
     ../include/cudaInclude/helper_math.h \
     ../src/SceneData.h \
     ../src/Light.h \
+    ../src/DisplayCalculatorKernels.h \
     ../src/CPU/mainCPU.h \
     ../include/cudaInclude/helper_timer.h \
     ../include/cudaInclude/exception.h \

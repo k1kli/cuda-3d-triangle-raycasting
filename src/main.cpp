@@ -14,6 +14,7 @@
 #include <vector>
 #include <strstream>
 #include "DisplayCalculator.h"
+#include "DisplayCalculatorKernels.h"
 #include "mat4x4.h"
 #include "Mesh.h"
 #include "CPU/mainCPU.h"
@@ -252,6 +253,7 @@ namespace GPU
 		glutReshapeFunc(Reshape);
 		glutPassiveMotionFunc(MouseMotion);
 		bindTexture(600,600);
+		InitConstantMemory();
 		CreateMesh(argc, argv);
 		glutMainLoop();
 	}
