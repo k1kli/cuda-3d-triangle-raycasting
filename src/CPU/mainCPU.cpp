@@ -183,24 +183,32 @@ namespace CPU
 
 		displayCalculator.SetCameraPosition(make_float3(0.0f, 0.0f, -5.0f));
 		displayCalculator.SetCameraFieldOfView(5.0f, 5.0f);
-		displayCalculator.mesh.material.color=0xFFFF00FF;
-		displayCalculator.mesh.material.diffuse = 0.1f;
-		displayCalculator.mesh.material.specular = 0.9f;
-		displayCalculator.mesh.material.smoothness = 60.0f;
+		displayCalculator.mesh.material.color=OBJECT_COLOR;
+		displayCalculator.mesh.material.diffuse = DIFFUSE;
+		displayCalculator.mesh.material.specular = SPECULAR;
+		displayCalculator.mesh.material.smoothness = SMOOTHNESS;
 	}
 	void SetScene()
 	{
-		int lights = 5;
-		for(int i = 0; i < lights; i++ )
+#ifdef MULTIPLE_LIGHTS
+		for(int i = 0; i < LIGHT_COUNT; i++ )
 		{
-			float3 color = make_float3(sin(2.0*PI*i/lights), sin(2.0*PI*i/lights), cos(2.0*PI*i/lights));
-			color.x = color.x*color.x;
-			color.y = color.y*color.y;
-			color.z = color.z*color.z;
+			float3 color = make_float3(abs(0.5f-(float)i/LIGHT_COUNT)*2, sin(2*PI*((float)i/LIGHT_COUNT)), cos(2*PI*((float)i/LIGHT_COUNT)));
+			color.y = (color.y+1)/2;
+			color.z = (color.z+1)/2;
+			color/=sqrt(LIGHT_COUNT);
 			displayCalculator.sceneData.lights.push_back(
-					Light(color, make_float3(cos(2.0*PI*i/lights), sin(2.0*PI*i/lights), -3.0f))
+					Light(color, make_float3(1.5f*cos(2.0*PI*i/LIGHT_COUNT), 1.5f*sin(2.0*PI*i/LIGHT_COUNT), -3.0f))
 			);
 		}
+#endif
+#ifdef SINGLE_LIGHT
+		displayCalculator.sceneData.lights.push_back(
+							Light(
+									make_float3(LIGHT_COLOR_X, LIGHT_COLOR_Y, LIGHT_COLOR_Z),
+									make_float3(LIGHT_POS_X, LIGHT_POS_Y,LIGHT_POS_Z))
+					);
+#endif
 	}
 
 	void StartGL(int argc, char **argv)
