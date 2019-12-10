@@ -7,7 +7,7 @@
 
 #ifndef DISPLAYCALCULATORKERNELS_H_
 #define DISPLAYCALCULATORKERNELS_H_
-#include "Mesh.h"
+#include "Mesh.cuh"
 #include "cuda_runtime.h"
 
 void SaveToConstantMemory();

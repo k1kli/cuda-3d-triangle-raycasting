@@ -8,8 +8,8 @@
 #ifndef DISPLAYCALCULATOR_H_
 #define DISPLAYCALCULATOR_H_
 
-#include "Mesh.h"
-#include "SceneData.h"
+#include "Mesh.cuh"
+#include "SceneData.cuh"
 
 class DisplayCalculator {
 	float fovWidth;

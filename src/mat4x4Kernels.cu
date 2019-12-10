@@ -12,8 +12,8 @@
 #include <stdlib.h>
 
 #include <cuda.h>
-#include "mat4x4Kernels.h"
-#include "mat4x4.h"
+#include "../include/mat4x4Kernels.cuh"
+#include "../include/mat4x4.cuh"
 
 
 

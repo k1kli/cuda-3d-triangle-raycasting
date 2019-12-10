@@ -5,8 +5,8 @@
  *      Author: root
  */
 
-#include "Material.h"
-#include "DisplayCalculatorKernels.h"
+#include "../include/Material.cuh"
+#include "../include/DisplayCalculatorKernels.cuh"
 
 Material::Material() {
 	// TODO Auto-generated constructor stub

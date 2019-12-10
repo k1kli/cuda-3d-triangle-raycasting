@@ -5,13 +5,13 @@
  *      Author: karol
  */
 
-#include "mat4x4.h"
+#include "../include/mat4x4.cuh"
 #include "cuda_runtime.h"
 #include <helper_math.h>
 #include <helper_cuda.h>
 #include <iostream>
-#include "defines.h"
-#include "mat4x4Kernels.h"
+#include "../include/defines.h"
+#include "../include/mat4x4Kernels.cuh"
 
 mat4x4::mat4x4(float initVal) {
 	for(int i = 0; i < 4; i++)

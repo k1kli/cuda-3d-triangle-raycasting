@@ -8,8 +8,8 @@
 #ifndef MESH_H_
 #define MESH_H_
 #include "cuda_runtime_api.h"
-#include "mat4x4.h"
-#include "Material.h"
+#include "mat4x4.cuh"
+#include "Material.cuh"
 
 struct DeviceMeshData
 {

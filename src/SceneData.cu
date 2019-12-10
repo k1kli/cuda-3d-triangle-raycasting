@@ -5,9 +5,9 @@
  *      Author: root
  */
 
-#include "SceneData.h"
+#include "../include/SceneData.cuh"
 #include <vector>
-#include "DisplayCalculatorKernels.h"
+#include "../include/DisplayCalculatorKernels.cuh"
 
 using namespace std;
 

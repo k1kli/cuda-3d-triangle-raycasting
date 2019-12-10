@@ -15,7 +15,7 @@
 #include <stdlib.h>
 
 #include <cuda.h>
-#include "mat4x4.h"
+#include "mat4x4.cuh"
 
 void SetMatrix(const mat4x4 & h_matrix);
 

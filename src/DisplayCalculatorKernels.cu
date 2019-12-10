@@ -1,9 +1,9 @@
-#include "DisplayCalculatorKernels.h"
-#include "cuda_runtime.h"
-#include "Mesh.h"
+#include "../include/DisplayCalculatorKernels.cuh"
+#include "../include/cuda_runtime.h"
+#include "../include/Mesh.cuh"
 #include "stdio.h"
 #include <helper_math.h>
-#include "defines.h"
+#include "../include/defines.h"
 
 
 __device__ __constant__ float3 c_lightColors[128];

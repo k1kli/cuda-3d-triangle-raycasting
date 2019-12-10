@@ -23,17 +23,17 @@
 #include <iostream>
 #include <vector>
 #include <strstream>
-#include "../DisplayCalculator.h"
-#include "../mat4x4.h"
-#include "../Mesh.h"
-#include "mainCPU.h"
+#include "../include/DisplayCalculator.cuh"
+#include "../include/mat4x4.cuh"
+#include "../include/Mesh.cuh"
+#include "../include/mainCPU.cuh"
+#include "../include/defines.h"
 
 // includes CUDA
 #include <cuda_runtime.h>
 #include <helper_timer.h>
 #include <helper_cuda.h>
 #include <helper_math.h>
-#include "../defines.h"
 
 using namespace std;
 

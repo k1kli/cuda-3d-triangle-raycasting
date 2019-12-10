@@ -4,29 +4,29 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <glew.h>
+#include <GL/glew.h>
 #include <GL/glut.h>
-#include <cuda_gl_interop.h>
 #include <stdio.h>
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <strstream>
-#include "DisplayCalculator.h"
-#include "DisplayCalculatorKernels.h"
-#include "mat4x4.h"
-#include "Mesh.h"
-#include "CPU/mainCPU.h"
-#include "Light.h"
-#include "SceneData.h"
+#include "../include/DisplayCalculator.cuh"
+#include "../include/DisplayCalculatorKernels.cuh"
+#include "../include/mat4x4.cuh"
+#include "../include/Mesh.cuh"
+#include "../include/mainGPU.cuh"
+#include "../include/Light.cuh"
+#include "../include/SceneData.cuh"
+#include "../include/defines.h"
 
 // includes CUDA
 #include <cuda_runtime.h>
 #include <helper_timer.h>
 #include <helper_cuda.h>
 #include <helper_math.h>
-#include "defines.h"
+#include <cuda_gl_interop.h>
 
 using namespace std;
 
@@ -280,18 +280,11 @@ namespace GPU
 		glutMainLoop();
 	}
 
-}
 
+	int mainGPU(int argc, char **argv)
+	{
+		StartGL(argc, argv);
+		return 0;
+	}
 
-int main(int argc, char **argv)
-{
-	if(argc > 1 && 0 == strcmp(argv[1], "CPU"))
-	{
-		CPU::mainCPU(argc, argv);
-	}
-	else
-	{
-		GPU::StartGL(argc, argv);
-	}
-	return 0;
 }

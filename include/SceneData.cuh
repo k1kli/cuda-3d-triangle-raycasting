@@ -8,7 +8,7 @@
 #ifndef SCENEDATA_H_
 #define SCENEDATA_H_
 #include <vector>
-#include "Light.h"
+#include "Light.cuh"
 
 class SceneData {
 public:

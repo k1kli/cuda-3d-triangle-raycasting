@@ -5,12 +5,12 @@
  *      Author: karol
  */
 
-#include "Mesh.h"
+#include "../include/Mesh.cuh"
 #include <cuda_runtime.h>
 #include <helper_math.h>
 #include <helper_cuda.h>
-#include "DisplayCalculatorKernels.h"
-#include "mat4x4.h"
+#include "../include/DisplayCalculatorKernels.cuh"
+#include "../include/mat4x4.cuh"
 
 Mesh::Mesh(bool onCPU) {
 	worldMatrix = getIdentityMatrix();

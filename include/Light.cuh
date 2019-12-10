@@ -7,7 +7,7 @@
 
 #ifndef LIGHT_H_
 #define LIGHT_H_
-#include "cuda_runtime.h"
+#include <cuda_runtime.h>
 
 class Light {
 public:

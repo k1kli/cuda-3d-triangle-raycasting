@@ -5,13 +5,13 @@
  *      Author: karol
  */
 
-#include "DisplayCalculator.h"
-#include "Mesh.h"
-#include "defines.h"
+#include "../include/DisplayCalculator.cuh"
+#include "../include/Mesh.cuh"
+#include "../include/defines.h"
 #include <cuda_runtime.h>
 #include <helper_math.h>
 #include <helper_cuda.h>
-#include "DisplayCalculatorKernels.h"
+#include "../include/DisplayCalculatorKernels.cuh"
 
 DisplayCalculator::DisplayCalculator(bool onCPU) {
 	this->onCPU = onCPU;
