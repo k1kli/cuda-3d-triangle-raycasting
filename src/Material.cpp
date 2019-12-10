@@ -18,5 +18,5 @@ Material::~Material() {
 }
 
 void Material::SendToGPU() {
-	//UpdateMaterialGPU(color, diffuse, specular, smoothness);
+	UpdateMaterialGPU(color, diffuse, specular, smoothness);
 }

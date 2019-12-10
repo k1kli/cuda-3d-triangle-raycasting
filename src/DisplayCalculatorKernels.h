@@ -19,6 +19,7 @@ __global__ void CastRaysOrthogonal(
 
 void InitConstantMemory();
 void UpdateLightsGPU(float3 * lightColors, float3 * lightPositions, int lightCount);
+void UpdateMaterialGPU(uint objectColor, float diffuse, float specular, float smoothness);
 
 __device__ __host__ bool RayIntersectsWith(float3 &  rayStartingPoint,
 		float3 & v1, float3 &  v2, float3 &  v3);

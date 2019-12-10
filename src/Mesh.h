@@ -9,6 +9,7 @@
 #define MESH_H_
 #include "cuda_runtime_api.h"
 #include "mat4x4.h"
+#include "Material.h"
 
 struct DeviceMeshData
 {
@@ -30,6 +31,7 @@ class Mesh {
 public:
 	int pointsLength = 0;
 	int trianglesLength = 0;
+	Material material;
 	Mesh(bool onCPU = false);
 	virtual ~Mesh();
 	void SetPoints(float3 * points, int length);

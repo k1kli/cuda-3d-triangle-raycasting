@@ -166,7 +166,7 @@ namespace CPU
 		return true;
 	}
 
-	void CreateMesh(int argc, char **argv)
+	void SetMesh(int argc, char **argv)
 	{
 		if(argc != 3)
 		{
@@ -183,6 +183,13 @@ namespace CPU
 
 		displayCalculator.SetCameraPosition(make_float3(0.0f, 0.0f, -5.0f));
 		displayCalculator.SetCameraFieldOfView(5.0f, 5.0f);
+		displayCalculator.mesh.material.color=0xFFFF00FF;
+		displayCalculator.mesh.material.diffuse = 0.1f;
+		displayCalculator.mesh.material.specular = 0.9f;
+		displayCalculator.mesh.material.smoothness = 60.0f;
+	}
+	void SetScene()
+	{
 		displayCalculator.sceneData.lights.push_back(
 				Light(make_float3(1.0f, 0.0f, 0.0f), make_float3(-2.0f, 0.0f, -2.0f))
 		);
@@ -201,7 +208,8 @@ namespace CPU
 		glewInit();
 		glutDisplayFunc(Display);
 		glutReshapeFunc(Reshape);
-		CreateMesh(argc, argv);
+		SetMesh(argc, argv);
+		SetScene();
 		glutMainLoop();
 	}
 

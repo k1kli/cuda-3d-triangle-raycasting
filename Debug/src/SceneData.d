@@ -210,4 +210,5 @@ src/SceneData.o : ../src/SceneData.cpp \
     /usr/include/c++/7/bits/basic_ios.tcc \
     /usr/include/c++/7/bits/ostream.tcc \
     /usr/include/c++/7/istream \
-    /usr/include/c++/7/bits/istream.tcc
+    /usr/include/c++/7/bits/istream.tcc \
+    ../src/Material.h

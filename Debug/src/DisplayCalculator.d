@@ -241,6 +241,7 @@ src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
     /usr/include/c++/7/bits/ostream.tcc \
     /usr/include/c++/7/istream \
     /usr/include/c++/7/bits/istream.tcc \
+    ../src/Material.h \
     ../src/SceneData.h \
     /usr/include/c++/7/vector \
     /usr/include/c++/7/bits/stl_construct.h \

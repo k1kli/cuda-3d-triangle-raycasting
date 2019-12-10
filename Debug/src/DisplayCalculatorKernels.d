@@ -241,4 +241,5 @@ src/DisplayCalculatorKernels.o : ../src/DisplayCalculatorKernels.cu \
     /usr/include/c++/7/bits/ostream.tcc \
     /usr/include/c++/7/istream \
     /usr/include/c++/7/bits/istream.tcc \
+    ../src/Material.h \
     ../src/defines.h
