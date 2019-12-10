@@ -14,9 +14,12 @@
 #include <vector>
 #include <strstream>
 #include "DisplayCalculator.h"
+#include "DisplayCalculatorKernels.h"
 #include "mat4x4.h"
 #include "Mesh.h"
 #include "CPU/mainCPU.h"
+#include "Light.h"
+#include "SceneData.h"
 
 // includes CUDA
 #include <cuda_runtime.h>
@@ -210,7 +213,7 @@ namespace GPU
 		return true;
 	}
 
-	void CreateMesh(int argc, char **argv)
+	void SetMesh(int argc, char **argv)
 	{
 		if(argc != 2)
 		{
@@ -225,10 +228,31 @@ namespace GPU
 		}
 		printf("triangles=%d, vertices=%d\n", displayCalculator.mesh.trianglesLength, displayCalculator.mesh.pointsLength);
 		displayCalculator.mesh.CopyToDevice();
-		getLastCudaError("failed copy to device");
-
+		getLastCudaError("failed copy mesh to device");
+		displayCalculator.mesh.material.color=0xFFFF00FF;
+		displayCalculator.mesh.material.diffuse = 0.3f;
+		displayCalculator.mesh.material.specular = 0.7f;
+		displayCalculator.mesh.material.smoothness = 30.0f;
+		displayCalculator.mesh.material.SendToGPU();
+		getLastCudaError("failed copy material to device");
+	}
+	void SetScene()
+	{
 		displayCalculator.SetCameraPosition(make_float3(0.0f, 0.0f, -5.0f));
 		displayCalculator.SetCameraFieldOfView(5.0f, 5.0f);
+		int lights = 5;
+		for(int i = 0; i < lights; i++ )
+		{
+			float3 color = make_float3(sin(2.0*PI*i/lights), sin(2.0*PI*i/lights), cos(2.0*PI*i/lights));
+			color.x = color.x*color.x;
+			color.y = color.y*color.y;
+			color.z = color.z*color.z;
+			displayCalculator.sceneData.lights.push_back(
+					Light(color, make_float3(cos(2.0*PI*i/lights), sin(2.0*PI*i/lights), -3.0f))
+			);
+		}
+		displayCalculator.sceneData.SendLightsToGPU();
+		getLastCudaError("failed copy lights to device");
 	}
 
 	void StartGL(int argc, char **argv)
@@ -242,7 +266,9 @@ namespace GPU
 		glutReshapeFunc(Reshape);
 		glutPassiveMotionFunc(MouseMotion);
 		bindTexture(600,600);
-		CreateMesh(argc, argv);
+		InitConstantMemory();
+		SetMesh(argc, argv);
+		SetScene();
 		glutMainLoop();
 	}
 

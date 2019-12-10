@@ -9,6 +9,7 @@
 #define DISPLAYCALCULATOR_H_
 
 #include "Mesh.h"
+#include "SceneData.h"
 
 class DisplayCalculator {
 	float fovWidth;
@@ -16,14 +17,14 @@ class DisplayCalculator {
 	bool onCPU;
 	void GenerateDisplayCPU();
 	unsigned int GetColorOfClosestHitpointCPU(float3 & rayStartingPoint);
-	unsigned int CalculateLightCPU(float3 toLight, float3 &  normalVector,
-			float diffuseFactor, float specularFactor, int m);
+	unsigned int CalculateLightCPU(float3 & hitPoint, float3 &  normalVector);
 public:
 	float3 cameraPosition;
 	int * colorMap = nullptr;
 	Mesh mesh;
 	int mapWidth;
 	int mapHeight;
+	SceneData sceneData;
 	DisplayCalculator(bool onCPU = false);
 	virtual ~DisplayCalculator();
 	void GenerateDisplay();

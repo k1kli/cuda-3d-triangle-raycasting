@@ -6,30 +6,31 @@
 #include "defines.h"
 
 
-__device__ __constant__ float3 lightColor;
-__device__ __constant__ float3 lightPos;
-__device__ __constant__ uint objectColor = 0xFFFFFFFF;
+__device__ __constant__ float3 c_lightColors[128];
+__device__ __constant__ float3 c_lightPositions[128];
+__device__ __constant__ int c_lightCount;
+__device__ __constant__ uint c_objectColor = 0xFFFFFFFF;
 __device__ __constant__ float3 zero;
 __device__ __constant__ float3 one;
 __device__ __constant__ float3 toObserver;
 __device__ __constant__ float3 ray;
 
+__device__ __constant__ float c_smoothness;
+__device__ __constant__ float c_diffuse;
+__device__ __constant__ float c_specular;
+
 void InitConstantMemory()
 {
 
-}
 
-void SaveToConstantMemory()
-{
+	float3 h_zero = make_float3(0.0f, 0.0f, 0.0f);
 
+	cudaMemcpyToSymbol(zero, &h_zero, sizeof(float3),0,cudaMemcpyHostToDevice);
 
-	float3 h_lightColor = make_float3(1.0f,1.0f,1.0f);
+	float3 h_one = make_float3(1.0f, 1.0f, 1.0f);
 
-	cudaMemcpyToSymbol(lightColor, &h_lightColor, sizeof(float3),0,cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(one, &h_one, sizeof(float3),0,cudaMemcpyHostToDevice);
 
-	float3 h_lightPos = make_float3(-2.0f,3.0f,-2.0f);
-
-	cudaMemcpyToSymbol(lightPos, &h_lightPos, sizeof(float3),0,cudaMemcpyHostToDevice);
 
 	float3 h_toObserver = make_float3(0.0f, 0.0f, -1.0f);
 
@@ -40,14 +41,30 @@ void SaveToConstantMemory()
 	cudaMemcpyToSymbol(ray, &h_ray, sizeof(float3),0,cudaMemcpyHostToDevice);
 }
 
+void UpdateLightsGPU(float3 * lightColors, float3 * lightPositions, int lightCount)
+{
+
+	cudaMemcpyToSymbol(c_lightColors, lightColors, sizeof(float3)*lightCount,0,cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(c_lightPositions, lightPositions, sizeof(float3)*lightCount,0,cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(c_lightCount, &lightCount, sizeof(int),0,cudaMemcpyHostToDevice);
+}
+void UpdateMaterialGPU(uint objectColor, float diffuse, float specular, float smoothness)
+{
+
+
+	cudaMemcpyToSymbol(c_objectColor, &objectColor, sizeof(uint),0,cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(c_diffuse, &diffuse, sizeof(float),0,cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(c_specular, &specular, sizeof(float),0,cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(c_smoothness, &smoothness, sizeof(float),0,cudaMemcpyHostToDevice);
+}
+
 __device__ float GetDistanceToClosestHitpointInBatch(float3 &  rayStartingPoint,
 		DeviceMeshData * p_mesh, float4 * reachableTriangles, int reachableTrianglesSize,
 		float3 * closestHitPointNormal);
 
 
 
-__device__ unsigned int CalculateLight(float3 toLight, float3 &  normalVector,
-		float diffuseFactor, float specularFactor, int m);
+__device__ unsigned int CalculateLight(float3 &  hitPoint,float3 &  normalVector);
 
 
 __global__ void CastRaysOrthogonal(
@@ -78,6 +95,7 @@ __global__ void CastRaysOrthogonal(
 		{
 			int inBatchTriangleId = (threadX+blockDim.x*threadY)*3;
 			int triangleId = i*3+inBatchTriangleId;
+			int reachable = 0;
 			if(triangleId < mesh.trianglesLength)
 			{
 				reachableTriangles[inBatchTriangleId] = mesh.d_points[mesh.d_triangles[triangleId]];
@@ -87,13 +105,15 @@ __global__ void CastRaysOrthogonal(
 				float maxX = MAX(reachableTriangles[inBatchTriangleId].x, MAX(reachableTriangles[inBatchTriangleId+1].x,reachableTriangles[inBatchTriangleId+2].x));
 				float minY = MIN(reachableTriangles[inBatchTriangleId].y, MIN(reachableTriangles[inBatchTriangleId+1].y,reachableTriangles[inBatchTriangleId+2].y));
 				float maxY = MAX(reachableTriangles[inBatchTriangleId].y, MAX(reachableTriangles[inBatchTriangleId+1].y,reachableTriangles[inBatchTriangleId+2].y));
+				reachable = 1;
 				if(!(minX <= blockEnd.x && minY <= blockEnd.y && maxX >= blockStart.x && maxY >= blockStart.y))
 				{
 					reachableTriangles[inBatchTriangleId] = make_float4(INFINITY,0,0, 0);
+					reachable = 0;
 				}
 			}
-			__syncthreads();
-			if(mapIndexX < width && mapIndexY < height)
+			reachable = __syncthreads_or(reachable);
+			if(reachable && mapIndexX < width && mapIndexY < height)
 			{
 				float3 hitPointNormal;
 				float distance =  GetDistanceToClosestHitpointInBatch(rayStartingPoint,
@@ -120,8 +140,7 @@ __global__ void CastRaysOrthogonal(
 			float3 hitPoint = make_float3(rayStartingPoint.x, rayStartingPoint.y, rayStartingPoint.z+closestDistance);
 
 
-			float3 toLight = normalize(lightPos - hitPoint);
-			unsigned int color = CalculateLight(toLight, closestHitPointNormal, 0.7f, 0.3f, 30);
+			unsigned int color = CalculateLight(hitPoint, closestHitPointNormal);
 			colorMap[mapIndex] = color;
 
 		}
@@ -155,19 +174,24 @@ __device__ float GetDistanceToClosestHitpointInBatch(float3 &  rayStartingPoint,
 	return closestDistance;
 
 }
-__device__ unsigned int CalculateLight(float3 toLight, float3 &  normalVector,
-		float diffuseFactor, float specularFactor, int m)
+__device__ unsigned int CalculateLight(float3 &  hitPoint,float3 &  normalVector)
 {
-	float3 reflectVector = 2*dot(toLight, normalVector)*normalVector-toLight;
-	float firstDot = dot(toLight,normalVector);
-	float secondDot = dot(reflectVector, toObserver);
-	secondDot = powf(secondDot, m);
-	float3 floatColor = clamp(lightColor*(diffuseFactor*firstDot+specularFactor*secondDot),zero, one);
+	float3 floatColor = zero;
+	for(int i = 0; i < c_lightCount; i++)
+	{
+		float3 toLight = normalize(c_lightPositions[i] - hitPoint);
+		float3 reflectVector = 2*dot(toLight, normalVector)*normalVector-toLight;
+		float firstDot = dot(toLight,normalVector);
+		float secondDot = dot(reflectVector, toObserver);
+		secondDot = powf(secondDot, c_smoothness);
+		floatColor += c_lightColors[i]*(c_diffuse*firstDot+c_specular*secondDot);
+	}
+	floatColor = clamp(floatColor, zero, one);
 	unsigned int res =
 			255u <<24 |
-			((unsigned int)(floatColor.x*((objectColor>>16)&255))<<16) |
-			((unsigned int)(floatColor.y*((objectColor>>8)&255))<<8) |
-			(unsigned int)(floatColor.z*(objectColor&255));
+			((unsigned int)(floatColor.x*((c_objectColor>>16)&255))<<16) |
+			((unsigned int)(floatColor.y*((c_objectColor>>8)&255))<<8) |
+			(unsigned int)(floatColor.z*(c_objectColor&255));
 	return res;
 
 }

@@ -240,6 +240,7 @@ src/Mesh.o : ../src/Mesh.cu \
     /usr/include/c++/7/bits/ostream.tcc \
     /usr/include/c++/7/istream \
     /usr/include/c++/7/bits/istream.tcc \
+    ../src/Material.h \
     ../include/cudaInclude/helper_cuda.h \
     ../include/cudaInclude/helper_string.h \
     /usr/include/c++/7/fstream \

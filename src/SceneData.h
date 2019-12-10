@@ -7,16 +7,15 @@
 
 #ifndef SCENEDATA_H_
 #define SCENEDATA_H_
+#include <vector>
+#include "Light.h"
 
 class SceneData {
 public:
-	float3 * lightColor;
-	float3 * lightPos;
-	int lightsCount
-	uint objectColor = 0xFFFFFFFF;
+	std::vector<Light> lights;
 	SceneData();
 	virtual ~SceneData();
-	void SetLights(float3 * lightColors, float3 * lightPositions, int lightsCount)
+	void SendLightsToGPU();
 };
 
 #endif /* SCENEDATA_H_ */
