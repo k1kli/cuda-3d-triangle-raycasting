@@ -183,6 +183,13 @@ namespace CPU
 
 		displayCalculator.SetCameraPosition(make_float3(0.0f, 0.0f, -5.0f));
 		displayCalculator.SetCameraFieldOfView(5.0f, 5.0f);
+		displayCalculator.sceneData.lights.push_back(
+				Light(make_float3(1.0f, 0.0f, 0.0f), make_float3(-2.0f, 0.0f, -2.0f))
+		);
+
+		displayCalculator.sceneData.lights.push_back(
+				Light(make_float3(0.0f, 0.0f, 1.0f), make_float3(2.0f, 0.0f, -2.0f))
+		);
 	}
 
 	void StartGL(int argc, char **argv)

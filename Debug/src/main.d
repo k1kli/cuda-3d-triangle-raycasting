@@ -224,6 +224,8 @@ src/main.o : ../src/main.cpp \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/vector_functions.h \
     /usr/local/cuda-10.1/bin/../targets/x86_64-linux/include/vector_functions.hpp \
     ../include/cudaInclude/helper_math.h \
+    ../src/SceneData.h \
+    ../src/Light.h \
     ../src/CPU/mainCPU.h \
     ../include/cudaInclude/helper_timer.h \
     ../include/cudaInclude/exception.h \

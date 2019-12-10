@@ -17,6 +17,8 @@
 #include "mat4x4.h"
 #include "Mesh.h"
 #include "CPU/mainCPU.h"
+#include "Light.h"
+#include "SceneData.h"
 
 // includes CUDA
 #include <cuda_runtime.h>
@@ -229,6 +231,14 @@ namespace GPU
 
 		displayCalculator.SetCameraPosition(make_float3(0.0f, 0.0f, -5.0f));
 		displayCalculator.SetCameraFieldOfView(5.0f, 5.0f);
+		displayCalculator.sceneData.lights.push_back(
+				Light(make_float3(1.0f, 0.0f, 0.0f), make_float3(-2.0f, 0.0f, -2.0f))
+		);
+
+		displayCalculator.sceneData.lights.push_back(
+				Light(make_float3(0.0f, 0.0f, 1.0f), make_float3(2.0f, 0.0f, -2.0f))
+		);
+		displayCalculator.sceneData.SendLightsToGPU();
 	}
 
 	void StartGL(int argc, char **argv)

@@ -241,6 +241,14 @@ src/DisplayCalculator.o : ../src/DisplayCalculator.cu \
     /usr/include/c++/7/bits/ostream.tcc \
     /usr/include/c++/7/istream \
     /usr/include/c++/7/bits/istream.tcc \
+    ../src/SceneData.h \
+    /usr/include/c++/7/vector \
+    /usr/include/c++/7/bits/stl_construct.h \
+    /usr/include/c++/7/bits/stl_uninitialized.h \
+    /usr/include/c++/7/bits/stl_vector.h \
+    /usr/include/c++/7/bits/stl_bvector.h \
+    /usr/include/c++/7/bits/vector.tcc \
+    ../src/Light.h \
     ../src/defines.h \
     ../include/cudaInclude/helper_cuda.h \
     ../include/cudaInclude/helper_string.h \

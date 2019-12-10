@@ -11,12 +11,18 @@ CU_SRCS += \
 ../src/mat4x4Kernels.cu 
 
 CPP_SRCS += \
+../src/Light.cpp \
+../src/Material.cpp \
+../src/SceneData.cpp \
 ../src/main.cpp 
 
 OBJS += \
 ./src/DisplayCalculator.o \
 ./src/DisplayCalculatorKernels.o \
+./src/Light.o \
+./src/Material.o \
 ./src/Mesh.o \
+./src/SceneData.o \
 ./src/main.o \
 ./src/mat4x4.o \
 ./src/mat4x4Kernels.o 
@@ -29,6 +35,9 @@ CU_DEPS += \
 ./src/mat4x4Kernels.d 
 
 CPP_DEPS += \
+./src/Light.d \
+./src/Material.d \
+./src/SceneData.d \
 ./src/main.d 
 
 

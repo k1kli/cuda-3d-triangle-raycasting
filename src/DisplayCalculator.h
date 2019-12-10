@@ -9,6 +9,7 @@
 #define DISPLAYCALCULATOR_H_
 
 #include "Mesh.h"
+#include "SceneData.h"
 
 class DisplayCalculator {
 	float fovWidth;
@@ -24,6 +25,7 @@ public:
 	Mesh mesh;
 	int mapWidth;
 	int mapHeight;
+	SceneData sceneData;
 	DisplayCalculator(bool onCPU = false);
 	virtual ~DisplayCalculator();
 	void GenerateDisplay();

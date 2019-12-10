@@ -128,8 +128,6 @@ void Mesh::CopyToDevice()
 	cudaMemcpy(d_triangles, triangles, sizeof(int)*trianglesLength, cudaMemcpyHostToDevice);
 	getLastCudaError("couldn't memcpy triangles in mesh");
 
-	SaveToConstantMemory();
-	getLastCudaError("Couldn't save data to constant for Mesh");
 	initialized = true;
 }
 void Mesh::UpdateMeshVertices()

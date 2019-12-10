@@ -16,6 +16,10 @@
 DisplayCalculator::DisplayCalculator(bool onCPU) {
 	this->onCPU = onCPU;
 	mesh = Mesh(onCPU);
+	if(!onCPU)
+	{
+		InitConstantMemory();
+	}
 
 }
 

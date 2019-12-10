@@ -8,6 +8,7 @@
 #ifndef DISPLAYCALCULATORKERNELS_H_
 #define DISPLAYCALCULATORKERNELS_H_
 #include "Mesh.h"
+#include "cuda_runtime.h"
 
 void SaveToConstantMemory();
 
@@ -15,6 +16,9 @@ __global__ void CastRaysOrthogonal(
 		float3 cameraBottomLeftCorner, float3 xOffset, float3 yOffset,
 		int width, int height,
 		int * colorMap, DeviceMeshData mesh);
+
+void InitConstantMemory();
+void UpdateLightsGPU(float3 * lightColors, float3 * lightPositions, int lightCount);
 
 __device__ __host__ bool RayIntersectsWith(float3 &  rayStartingPoint,
 		float3 & v1, float3 &  v2, float3 &  v3);

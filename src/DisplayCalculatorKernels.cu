@@ -6,30 +6,29 @@
 #include "defines.h"
 
 
-__device__ __constant__ float3 lightColor;
-__device__ __constant__ float3 lightPos;
+__device__ __constant__ float3 c_lightColors[128];
+__device__ __constant__ float3 c_lightPositions[128];
+//__device__ __constant__ int c_lightCount;
 __device__ __constant__ uint objectColor = 0xFFFFFFFF;
 __device__ __constant__ float3 zero;
 __device__ __constant__ float3 one;
 __device__ __constant__ float3 toObserver;
 __device__ __constant__ float3 ray;
 
+#define c_lightCount 2
+
 void InitConstantMemory()
 {
 
-}
 
-void SaveToConstantMemory()
-{
+	float3 h_zero = make_float3(0.0f, 0.0f, 0.0f);
 
+	cudaMemcpyToSymbol(zero, &h_zero, sizeof(float3),0,cudaMemcpyHostToDevice);
 
-	float3 h_lightColor = make_float3(1.0f,1.0f,1.0f);
+	float3 h_one = make_float3(1.0f, 1.0f, 1.0f);
 
-	cudaMemcpyToSymbol(lightColor, &h_lightColor, sizeof(float3),0,cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(one, &h_one, sizeof(float3),0,cudaMemcpyHostToDevice);
 
-	float3 h_lightPos = make_float3(-2.0f,3.0f,-2.0f);
-
-	cudaMemcpyToSymbol(lightPos, &h_lightPos, sizeof(float3),0,cudaMemcpyHostToDevice);
 
 	float3 h_toObserver = make_float3(0.0f, 0.0f, -1.0f);
 
@@ -40,13 +39,21 @@ void SaveToConstantMemory()
 	cudaMemcpyToSymbol(ray, &h_ray, sizeof(float3),0,cudaMemcpyHostToDevice);
 }
 
+void UpdateLightsGPU(float3 * lightColors, float3 * lightPositions, int lightCount)
+{
+
+	cudaMemcpyToSymbol(c_lightColors, lightColors, sizeof(float3)*lightCount,0,cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(c_lightPositions, lightPositions, sizeof(float3)*lightCount,0,cudaMemcpyHostToDevice);
+	//cudaMemcpyToSymbol(c_lightCount, &lightCount, sizeof(int),0,cudaMemcpyHostToDevice);
+}
+
 __device__ float GetDistanceToClosestHitpointInBatch(float3 &  rayStartingPoint,
 		DeviceMeshData * p_mesh, float4 * reachableTriangles, int reachableTrianglesSize,
 		float3 * closestHitPointNormal);
 
 
 
-__device__ unsigned int CalculateLight(float3 toLight, float3 &  normalVector,
+__device__ unsigned int CalculateLight(float3 &  hitPoint,float3 &  normalVector,
 		float diffuseFactor, float specularFactor, int m);
 
 
@@ -120,8 +127,7 @@ __global__ void CastRaysOrthogonal(
 			float3 hitPoint = make_float3(rayStartingPoint.x, rayStartingPoint.y, rayStartingPoint.z+closestDistance);
 
 
-			float3 toLight = normalize(lightPos - hitPoint);
-			unsigned int color = CalculateLight(toLight, closestHitPointNormal, 0.7f, 0.3f, 30);
+			unsigned int color = CalculateLight(hitPoint, closestHitPointNormal, 0.7f, 0.3f, 30);
 			colorMap[mapIndex] = color;
 
 		}
@@ -155,14 +161,20 @@ __device__ float GetDistanceToClosestHitpointInBatch(float3 &  rayStartingPoint,
 	return closestDistance;
 
 }
-__device__ unsigned int CalculateLight(float3 toLight, float3 &  normalVector,
+__device__ unsigned int CalculateLight(float3 &  hitPoint,float3 &  normalVector,
 		float diffuseFactor, float specularFactor, int m)
 {
-	float3 reflectVector = 2*dot(toLight, normalVector)*normalVector-toLight;
-	float firstDot = dot(toLight,normalVector);
-	float secondDot = dot(reflectVector, toObserver);
-	secondDot = powf(secondDot, m);
-	float3 floatColor = clamp(lightColor*(diffuseFactor*firstDot+specularFactor*secondDot),zero, one);
+	float3 floatColor = zero;
+	for(int i = 0; i < c_lightCount; i++)
+	{
+		float3 toLight = normalize(c_lightPositions[i] - hitPoint);
+		float3 reflectVector = 2*dot(toLight, normalVector)*normalVector-toLight;
+		float firstDot = dot(toLight,normalVector);
+		float secondDot = dot(reflectVector, toObserver);
+		secondDot = powf(secondDot, m);
+		floatColor += c_lightColors[i]*(diffuseFactor*firstDot+specularFactor*secondDot);
+	}
+	floatColor = clamp(floatColor, zero, one);
 	unsigned int res =
 			255u <<24 |
 			((unsigned int)(floatColor.x*((objectColor>>16)&255))<<16) |
